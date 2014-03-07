@@ -1,0 +1,13 @@
+class CreateTable<%=@class_name %> < ActiveRecord::Migration
+  def self.up
+    create_table :<%=@table_name %> do |t|
+      <% @table_columns.each do |col| %>
+      t.<%=col.type %> :<%=col.name %> 
+      <% end %>
+      t.timestamps
+    end
+  end
+  def self.down
+    drop_table :<%=@table_name %>
+  end
+end
