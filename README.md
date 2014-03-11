@@ -16,15 +16,19 @@ It includes generation of migration, observing the save/destory on target model 
     	end
 
     	private
-    	def _save_order_sum(order)
-      		order_sum = order.line_items.inject(0){|sum, i| sum += i.total }
+    	def _get_order_sum(order)
+      		order.line_items.collect(&:total).inject(:+)
     	end
   	end
 
 ## Changes
 
-_still in alpha_  
-
+#####v1   
+_still in development_  
+- denormalize fields and nested fields √  
+- generate migration from denormalized model √   
+- observe model changes and update denormalized model √  
+- ...
 
 ## License  
-see the MIT-LICENSE file.
+see the MIT-LICENSE.
