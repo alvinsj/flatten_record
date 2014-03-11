@@ -42,7 +42,7 @@ module FlattenRecord
  
     def assign_custom_attrs(to_record) 
       @meta.custom_fields.each do |field, type|
-        to_record = assign_attr(to_record, "#{prefix}#{field}", @normal.send("_get_#{field}", @normal))
+        to_record = assign_attr(to_record, "#{prefix}#{field}", to_record.send("_get_#{field}", @normal))
       end
       to_record
     end
