@@ -12,6 +12,7 @@ module FlattenRecord
     end
 
     module ClassMethods 
+      @@denormalizer_meta = nil 
       def denormalize(model, &block)
         @@denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, prefix: "d_")
         @@parent_model = model.to_s.camelize.constantize
