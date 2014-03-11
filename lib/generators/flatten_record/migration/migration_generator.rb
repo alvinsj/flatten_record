@@ -16,11 +16,13 @@ module FlattenRecord
           klass = class_name.constantize
           @table_name = klass.table_name
           @class_name = @table_name.camelize
-          if klass.denormalizer_meta
+          if klass.table_exists?
+            puts "Error. Table already exists: #{@table_name}"
+          elsif klass.denormalizer_meta
             @table_columns = klass.denormalizer_meta.denormalized_columns
             migration_template 'migration.erb', "db/migrate/create_table_#{@table_name}.rb"
           else
-            puts "No denormalization definition found in #{class_name}"
+            puts "Error. No denormalization definition found in #{class_name}"
           end
         end
       end
