@@ -16,6 +16,7 @@ module FlattenRecord
       @options_for_child = Hash.new
       
       @attr_denormalizers = Array.new
+      @custom_fields = Hash.new
     end
 
     def denormalize(field, field_options={}, &block)
@@ -39,6 +40,7 @@ module FlattenRecord
     def save(col_name, col_type, extras={})
       @extra_columns << ActiveRecord::ConnectionAdapters::
           Column.new(col_name, extras[:default], col_type, extras[:null])
+      @custom_fields[col_name] = col_type
     end
     
     #
@@ -87,6 +89,10 @@ module FlattenRecord
     
     def children
       @child_denormalizer_metas
+    end
+
+    def custom_fields
+      @custom_fields
     end
 
     #

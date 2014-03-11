@@ -8,6 +8,7 @@ module FlattenRecord
 
     def denormalize_record(to_record=nil)
       to_record ||= @meta.denormalized_model.new
+      to_record = assign_custom_attrs(to_record) if @meta.custom_fields.present?
       to_record = assign_attrs(to_record)
       to_record = assign_children(to_record) if @meta.children.present?
       to_record
@@ -36,6 +37,13 @@ module FlattenRecord
         to_record = assign_attr(to_record, "#{prefix}#{attr.name}", @normal.send(attr.name))
       end
       to_record = assign_attr(to_record, "#{prefix}#{@meta.id_column.name}", @normal.send(:id))
+      to_record
+    end
+ 
+    def assign_custom_attrs(to_record) 
+      @meta.custom_fields.each do |field, type|
+        to_record = assign_attr(to_record, "#{prefix}#{field}", @normal.send("_get_#{field}", @normal))
+      end
       to_record
     end
     
