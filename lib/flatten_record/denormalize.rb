@@ -90,7 +90,7 @@ module FlattenRecord
       end
 
       def denormalized_field(normal, meta)
-        return "#{meta.prefix}#{meta.model_sym.to_s}_#{meta.id_column.name}" if meta.normal_model.name == normal
+        return "#{meta.prefix}#{meta.id_column.name}" if meta.normal_model.name == normal
         field = nil
         meta.children.each do |k,v| 
           temp = denormalized_field(normal, v)
