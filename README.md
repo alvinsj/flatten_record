@@ -12,7 +12,8 @@ It includes generation of migration, observing the save/destory on target model 
       		order.denormalize :customer
       		order.denormalize :line_items do |line_item|
         		line_item.denormalize(:redeem, as: :discount){|d| d.denormalize(:coupon) }
-      		order.save :order_sum, :decimal
+      		end
+          order.save :order_sum, :decimal
     	end
 
     	private
