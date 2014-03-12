@@ -9,7 +9,13 @@ module FlattenRecord
       @denormalized_model = denormalized_model_class
       @options = options || Hash.new
       
-      @columns = @normal_model.columns.select{|col| col.name!='id' } 
+      @columns = @normal_model.columns.select{|col| col.name!='id' }
+      if options[:only]
+        @columns = @columns.select{|col| options[:only].include?(col.name.to_sym) }
+      elsif options[:except]
+        @columns = @columns.select{|col| !options[:except].include?(col.name.to_sym) }
+      end
+
       @extra_columns = Array.new
       
       @child_denormalizer_metas = Hash.new
@@ -17,8 +23,10 @@ module FlattenRecord
       
       @attr_denormalizers = Array.new
       @custom_fields = Hash.new
+      @is_root = options[:is_root]
     end
-
+    
+    # calleb by denormalizer block 
     def denormalize(field, field_options={}, &block)
 
       association = @normal_model.reflect_on_association(field)
@@ -29,8 +37,10 @@ module FlattenRecord
           association.class_name.constantize
       
       @options_for_child[field] = field_options
+      child_prefix = "#{prefix}#{field.to_s}_" 
+      
       @child_denormalizer_metas[field] = 
-        DenormalizerMeta.new(field, @denormalized_model, field_options.merge(prefix: prefix) )
+        DenormalizerMeta.new(field, @denormalized_model, field_options.merge(prefix: child_prefix) )
           
       if block 
         yield @child_denormalizer_metas[field]
@@ -59,7 +69,7 @@ module FlattenRecord
     end
 
     def denormalized_columns
-      [id_column] + @columns + @extra_columns + child_denormalizers_columns
+      prefix_columns(prefix, [id_column] + @columns + @extra_columns) + child_denormalizers_columns
     end
 
     def base_columns
@@ -84,7 +94,7 @@ module FlattenRecord
     end
 
     def prefix
-      @options[:prefix] ? "#{@options[:prefix]}" : ''
+      "#{@options[:prefix]}"
     end
     
     def children
@@ -104,13 +114,14 @@ module FlattenRecord
     end
 
     def child_denormalizers_columns
-      @child_denormalizer_metas.map{|k,v| namespaced_columns(k, v.denormalized_columns)}.flatten
+      @child_denormalizer_metas.map{|k,v| v.denormalized_columns }.flatten
     end
     
-    def namespaced_columns(namespace, columns)
+    def prefix_columns(namespace, columns)
+      return columns if @is_root
       columns.
         map do |col| 
-          col_name = "#{prefix}#{namespace}_#{col.name}"; col
+          col_name = "#{namespace}#{col.name}"; col
           ActiveRecord::ConnectionAdapters::Column.
             new(col_name, col.default, col.sql_type, col.null)
         end

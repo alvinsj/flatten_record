@@ -14,7 +14,7 @@ module FlattenRecord
     module ClassMethods 
       @@denormalizer_meta = nil 
       def denormalize(model, &block)
-        @@denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, prefix: "d_")
+        @@denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, is_root: true, prefix: "d_")
         @@parent_model = model.to_s.camelize.constantize
         if block 
           yield @@denormalizer_meta
@@ -28,7 +28,7 @@ module FlattenRecord
           @@parent_model.denormalized_models ||= Array.new
           @@parent_model.denormalized_models << klass
         end
-        
+        Rails.application.config.active_record.observers ||= []  
         Rails.application.config.active_record.observers << model_observer(model, @@denormalizer_meta)
         #@@parent_model.send :include, FlattenRecord::DenormalizerHook 
       end
@@ -84,7 +84,7 @@ module FlattenRecord
       end
       
       def denormalize_parent(normal_instance)
-        denormalizer = FlattenRecord::Denormalizer.new(self.denormalizer_meta, normal_instance, "")
+        denormalizer = FlattenRecord::Denormalizer.new(self.denormalizer_meta, normal_instance)
         record_s = denormalizer.denormalize_record
         record_s.instance_of?(Array) ? record_s.each{|r| r.save} : record_s.save
       end
