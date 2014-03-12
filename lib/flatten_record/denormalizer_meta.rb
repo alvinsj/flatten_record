@@ -49,7 +49,7 @@ module FlattenRecord
 
     def save(col_name, col_type, extras={})
       @extra_columns << ActiveRecord::ConnectionAdapters::
-          Column.new(col_name, extras[:default], col_type, extras[:null])
+          Column.new(col_name.to_s, extras[:default], col_type, extras[:null])
       @custom_fields[col_name] = col_type
     end
     
