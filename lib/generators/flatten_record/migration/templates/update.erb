@@ -1,0 +1,18 @@
+class <%=@migration.camelize %><%=@class_name %> < ActiveRecord::Migration
+  def self.up
+    <% @add_columns.each do |col| %>
+      add_column :<%=@table_name %>, :<%=col.name %>, :<%=col.type %>
+    <% end %>
+    <% @drop_columns.each do |col| %>
+      remove_column :<%=@table_name %>, :<%=col.name %>
+    <% end %>
+  end
+  def self.down
+    <% @drop_columns.each do |col| %>
+      add_column :<%=@table_name %>, :<%=col.name %>, :<%=col.type %>
+    <% end %>
+    <% @add_columns.each do |col| %>
+      remove_column :<%=@table_name %>, :<%=col.name %>
+    <% end %>
+  end
+end
