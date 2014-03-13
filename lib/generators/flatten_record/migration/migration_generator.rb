@@ -17,7 +17,32 @@ module FlattenRecord
           @table_name = klass.table_name
           @class_name = @table_name.camelize
           if klass.table_exists?
-            puts "Error. Table already exists: #{@table_name}"
+            puts "Warning. Table already exists: #{@table_name}"
+            if klass.denormalizer_meta 
+              @add_columns = klass.denormalizer_meta.denormalized_columns.inject([]) do |cols, col| 
+                cols ||= []
+                klass.columns.collect(&:name).include?(col.name) ?
+                  cols : cols << col
+              end
+              @drop_columns = klass.columns.inject([]) do |cols, col|
+                next if col.name == 'id'
+                cols ||= []
+                klass.denormalizer_meta.denormalized_columns.collect(&:name).include?(col.name) ?
+                  cols : cols << col
+              end
+              
+              if !@add_columns.empty? || !@drop_columns.empty? 
+                puts "Generating migration based on the difference.."
+                puts "Add columns: " + @add_columns.collect(&:name).join(', ') unless @add_columns.empty?
+                puts "Drop columns: " + @drop_columns.collect(&:name).join(', ') unless @drop_columns.empty?
+
+                @migration = @add_columns.empty? ? 
+                  "drop_"+@drop_columns.first.name+"_from" : "add_"+@add_columns.first.name+"_to"
+                
+                migration_template 'update.erb', "db/migrate/#{@migration}_#{@table_name}.rb"
+              end
+
+            end
           elsif klass.denormalizer_meta
             @table_columns = klass.denormalizer_meta.denormalized_columns
             migration_template 'migration.erb', "db/migrate/create_table_#{@table_name}.rb"
