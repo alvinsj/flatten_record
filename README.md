@@ -26,6 +26,12 @@ It includes generation of migration, observing the save/destory on target model 
       		order.line_items.collect(&:total).inject(:+)
     	end
   	end
+ 
+### Eager loading the definition
+	# initializers/<denormalize>.rb or lib/<engine>/engine.rb 
+	config.after_initialize do
+      require_dependency root.join('app/models/denormalized_order').to_s
+    end
   	
 ### Generating migration file
     $ rails generate flatten_record:migration denormalized_order
