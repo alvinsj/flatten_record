@@ -13,6 +13,7 @@ def setup_db
     end
     create_table :children do |t|
       t.string :name
+      t.integer :parent_id
       t.integer :total
     end
     create_table :cats do |t|
@@ -34,8 +35,8 @@ describe FlattenRecord::DenormalizerMeta do
   before do
     setup_db 
     class Cat < ActiveRecord::Base; belongs_to :owner, polymorphic: true ; end
-    class Child < ActiveRecord::Base; has_many :cats; has_many :cats, as: :other_pets ; end
-    class Customer < ActiveRecord::Base; belongs_to :child; end 
+    class Child < ActiveRecord::Base; belongs_to :parent, class_name: :customer; has_many :cats; end
+    class Customer < ActiveRecord::Base; has_many :children, class_name: :child; has_many :cats; end 
     class Order < ActiveRecord::Base; belongs_to :customer;end
   end 
   after do 
@@ -72,7 +73,7 @@ describe FlattenRecord::DenormalizerMeta do
       klass.class_eval do
         denormalize :order do |order|
           order.denormalize :customer do |customer|
-            customer.denormalize :child
+            customer.denormalize :children
           end
         end
       end
@@ -85,8 +86,8 @@ describe FlattenRecord::DenormalizerMeta do
         to eq(order_col_count+customer_col_count+child_col_count)
      
       columns = meta.denormalized_columns.collect(&:name) 
-      expect(columns).to include('d_customer_child_child_id')
-      expect(columns).to include('d_customer_child_total')
+      expect(columns).to include('d_customer_children_child_id')
+      expect(columns).to include('d_customer_children_total')
     end
   end
 
@@ -97,7 +98,6 @@ describe FlattenRecord::DenormalizerMeta do
           order.save :custom_field_1, :integer
           order.denormalize :customer do |customer|
             customer.save :custom_field_2, :integer
-            customer.denormalize :child
           end
         end
       end
@@ -105,13 +105,38 @@ describe FlattenRecord::DenormalizerMeta do
   
       order_col_count = Order.columns.count  
       customer_col_count = Customer.columns.count
-      child_col_count = Child.columns.count
+      custom_col_count = 2
       expect(meta.denormalized_columns.count).
-        to eq(order_col_count+customer_col_count+child_col_count+2)
+        to eq(order_col_count+customer_col_count+custom_col_count)
      
       columns = meta.denormalized_columns.collect(&:name) 
       expect(columns).to include('custom_field_1')
       expect(columns).to include('d_customer_custom_field_2')
+    end
+  end
+
+  context "when polymorphic is defined " do
+    it 'should have the proper named model columns ' do
+      klass.class_eval do
+        denormalize :order do |order|
+          order.denormalize :customer do |customer|
+            customer.denormalize :cats, as: :cat
+          end
+        end
+      end
+      meta = klass.denormalizer_meta
+  
+      order_col_count = Order.columns.count  
+      customer_col_count = Customer.columns.count 
+      cat_col_count = Cat.columns.count 
+      expect(meta.denormalized_columns.count).to eq(order_col_count+customer_col_count+cat_col_count)
+     
+      columns = meta.denormalized_columns.collect(&:name) 
+      expect(columns).to include('d_customer_customer_id')
+      expect(columns).to include('d_customer_name')
+      expect(columns).to include('d_customer_cats_name')
+      expect(columns).to include('d_customer_cats_owner_type')
+      expect(columns).to include('d_customer_cats_owner_id')
     end
   end
 
