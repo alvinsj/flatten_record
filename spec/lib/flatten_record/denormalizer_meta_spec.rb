@@ -55,12 +55,44 @@ describe FlattenRecord::DenormalizerMeta do
       end
       meta = klass.denormalizer_meta
   
-      order_col_count = Order.columns.count # plus id field    
+      order_col_count = Order.columns.count     
       expect(meta.denormalized_columns.count).to eq(order_col_count)
      
       columns = meta.denormalized_columns.collect(&:name) 
       expect(columns).to include('order_id')
       expect(columns).to include('total')
+    end
+  end
+
+  context "when denormalize() with option[:except] is defined" do
+    it 'should have the target model columns' do
+      klass.class_eval do
+        denormalize :order, except: [:total] do |order|
+        end
+      end
+      meta = klass.denormalizer_meta
+  
+      order_col_count = Order.columns.count     
+      expect(meta.denormalized_columns.count).to eq(order_col_count-1)
+     
+      columns = meta.denormalized_columns.collect(&:name) 
+      expect(columns).not_to include('total')
+    end
+  end
+
+  context "when denormalize() with option[:only] is defined" do
+    it 'should have the target model columns' do
+      klass.class_eval do
+        denormalize :order, only: [:order_id] do |order|
+        end
+      end
+      meta = klass.denormalizer_meta
+  
+      order_col_count = Order.columns.count     
+      expect(meta.denormalized_columns.count).to eq(1)
+     
+      columns = meta.denormalized_columns.collect(&:name) 
+      expect(columns).to include('order_id')
     end
   end
 
