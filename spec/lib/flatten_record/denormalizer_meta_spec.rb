@@ -9,12 +9,10 @@ def setup_db
     end
     create_table :customers do |t|
       t.string :name
-      t.integer :child_id
     end
     create_table :children do |t|
       t.string :name
       t.integer :parent_id
-      t.integer :total
     end
     create_table :cats do |t|
       t.string :name
@@ -46,6 +44,23 @@ describe FlattenRecord::DenormalizerMeta do
   let(:klass) do
     class Denormalized < ActiveRecord::Base
       include FlattenRecord::Denormalize
+    end
+  end
+
+  context "when denormalize() is defined" do
+    it 'should have the target model columns' do
+      klass.class_eval do
+        denormalize :order do |order|
+        end
+      end
+      meta = klass.denormalizer_meta
+  
+      order_col_count = Order.columns.count # plus id field    
+      expect(meta.denormalized_columns.count).to eq(order_col_count)
+     
+      columns = meta.denormalized_columns.collect(&:name) 
+      expect(columns).to include('order_id')
+      expect(columns).to include('total')
     end
   end
 
@@ -87,7 +102,7 @@ describe FlattenRecord::DenormalizerMeta do
      
       columns = meta.denormalized_columns.collect(&:name) 
       expect(columns).to include('d_customer_children_child_id')
-      expect(columns).to include('d_customer_children_total')
+      expect(columns).to include('d_customer_children_name')
     end
   end
 

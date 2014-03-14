@@ -61,20 +61,6 @@ describe FlattenRecord::Denormalize do
       expect(klass).to respond_to(:destroy_denormalized)
     end
 
-    it 'should have the target model columns' do
-      klass.class_eval do
-        denormalize :target do |target|
-        end
-      end
-      meta = klass.denormalizer_meta
-  
-      target_columns_count = Target.columns.count # plus id field    
-      expect(meta.denormalized_columns.count).to eq(target_columns_count)
-     
-      columns = meta.denormalized_columns.collect(&:name) 
-      expect(columns).to include('target_id')
-      expect(columns).to include('total')
-    end
   end
 
 end
