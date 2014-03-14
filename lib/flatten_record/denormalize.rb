@@ -9,32 +9,33 @@ module FlattenRecord
     def self.included(base)
       Meta.included_classes ||= Array.new
       Meta.included_classes << base.name
+      base.class_eval do
+        cattr_accessor :denormalizer_meta, :parent_model
+      end
     end
 
     module ClassMethods 
-      @@denormalizer_meta = nil 
       def denormalize(model, &block)
-        @@denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, is_root: true, prefix: "d_")
-        @@parent_model = model.to_s.camelize.constantize
+        self.denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, is_root: true, prefix: "d_")
+        self.parent_model = model.to_s.camelize.constantize
         if block 
-          yield @@denormalizer_meta
+          yield self.denormalizer_meta
         else
           raise "block is required to specify fields for denormalization"
         end
         
         klass = self
-        if !@@parent_model.respond_to?(:denormalized_models)
-          @@parent_model.class_attribute :denormalized_models
-          @@parent_model.denormalized_models ||= Array.new
-          @@parent_model.denormalized_models << klass
+        if !self.parent_model.respond_to?(:denormalized_models)
+          self.parent_model.class_attribute :denormalized_models
+          self.parent_model.denormalized_models ||= Array.new
+          self.parent_model.denormalized_models << klass
         end
         Rails.application.config.active_record.observers ||= []  
-        Rails.application.config.active_record.observers << model_observer(model, @@denormalizer_meta)
-        #@@parent_model.send :include, FlattenRecord::DenormalizerHook 
+        Rails.application.config.active_record.observers << model_observer(model, self.denormalizer_meta)
       end
 
       def model_observer(model, meta)
-        observer_class = Class.new(FlattenRecord::Observer) 
+        observer_class = Class.new(FlattenRecord::Observer)
         observer_class.class_eval %Q{ def denormalized_model; #{self.name}; end }
         observer_class.observe( [model]+child_models(meta) )
 
@@ -56,11 +57,11 @@ module FlattenRecord
       end
 
       def denormalizer_meta
-        @@denormalizer_meta
+        self.denormalizer_meta
       end
 
       def parent_model
-        @@parent_model
+        self.parent_model
       end
 
       def create_denormalized(normal_instance)
