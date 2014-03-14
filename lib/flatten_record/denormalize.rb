@@ -15,8 +15,8 @@ module FlattenRecord
     end
 
     module ClassMethods 
-      def denormalize(model, &block)
-        self.denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, is_root: true, prefix: "d_")
+      def denormalize(model, options={}, &block)
+        self.denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, options.merge(is_root: true, prefix: "d_"))
         self.parent_model = model.to_s.camelize.constantize
         if block 
           yield self.denormalizer_meta
