@@ -34,7 +34,7 @@ module FlattenRecord
 
       associated_model = field_options[:as].present? ? 
           field_options[:as].to_s.camelize.constantize : 
-          association.class_name.constantize
+          association.class_name.camelize.constantize
       
       @options_for_child[field] = field_options
       child_prefix = "#{prefix}#{field.to_s}_" 
