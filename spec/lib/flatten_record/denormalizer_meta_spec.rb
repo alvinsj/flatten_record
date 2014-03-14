@@ -3,16 +3,22 @@ require 'spec_helper'
 def setup_db
   ActiveRecord::Base.logger
   ActiveRecord::Schema.define(:version => 1) do
-    create_table :targets do |t|
+    create_table :orders do |t|
       t.integer :total
-      t.integer :nested_target_id
+      t.integer :customer_id
     end
-    create_table :nested_targets do |t|
-      t.integer :total
+    create_table :customers do |t|
+      t.string :name
       t.integer :child_id
     end
     create_table :children do |t|
-      t.column :total, :integer
+      t.string :name
+      t.integer :total
+    end
+    create_table :cats do |t|
+      t.string :name
+      t.string :owner_type
+      t.integer :owner_id
     end
   end
 end
@@ -27,9 +33,10 @@ end
 describe FlattenRecord::DenormalizerMeta do
   before do
     setup_db 
-    class Child < ActiveRecord::Base; end
-    class NestedTarget < ActiveRecord::Base; belongs_to :child; end 
-    class Target < ActiveRecord::Base; belongs_to :nested_target;end
+    class Cat < ActiveRecord::Base; belongs_to :owner, polymorphic: true ; end
+    class Child < ActiveRecord::Base; has_many :cats; has_many :cats, as: :other_pets ; end
+    class Customer < ActiveRecord::Base; belongs_to :child; end 
+    class Order < ActiveRecord::Base; belongs_to :customer;end
   end 
   after do 
     teardown_db
@@ -44,67 +51,67 @@ describe FlattenRecord::DenormalizerMeta do
   context "when nested denormalize() is defined " do
     it 'should have the target+nested_target model columns ' do
       klass.class_eval do
-        denormalize :target do |target|
-          target.denormalize :nested_target
+        denormalize :order do |order|
+          order.denormalize :customer
         end
       end
       meta = klass.denormalizer_meta
   
-      target_col_count = Target.columns.count  
-      nested_target_col_count = NestedTarget.columns.count 
-      expect(meta.denormalized_columns.count).to eq(target_col_count+nested_target_col_count)
+      order_col_count = Order.columns.count  
+      customer_col_count = Customer.columns.count 
+      expect(meta.denormalized_columns.count).to eq(order_col_count+customer_col_count)
      
       columns = meta.denormalized_columns.collect(&:name) 
-      expect(columns).to include('d_nested_target_nested_target_id')
-      expect(columns).to include('d_nested_target_total')
+      expect(columns).to include('d_customer_customer_id')
+      expect(columns).to include('d_customer_name')
     end
   end
 
   context "when nested(x2) denormalize() is defined " do
     it 'should have the target+nested_target+child model columns ' do
       klass.class_eval do
-        denormalize :target do |target|
-          target.denormalize :nested_target do |nested_target|
-            nested_target.denormalize :child
+        denormalize :order do |order|
+          order.denormalize :customer do |customer|
+            customer.denormalize :child
           end
         end
       end
       meta = klass.denormalizer_meta
   
-      target_col_count = Target.columns.count  
-      nested_target_col_count = NestedTarget.columns.count
+      order_col_count = Order.columns.count  
+      customer_col_count = Customer.columns.count
       child_col_count = Child.columns.count
       expect(meta.denormalized_columns.count).
-        to eq(target_col_count+nested_target_col_count+child_col_count)
+        to eq(order_col_count+customer_col_count+child_col_count)
      
       columns = meta.denormalized_columns.collect(&:name) 
-      expect(columns).to include('d_nested_target_child_child_id')
-      expect(columns).to include('d_nested_target_child_total')
+      expect(columns).to include('d_customer_child_child_id')
+      expect(columns).to include('d_customer_child_total')
     end
   end
 
   context "when save() is defined " do
     it 'should have the custom columns ' do
       klass.class_eval do
-        denormalize :target do |target|
-          target.save :custom, :integer
-          target.denormalize :nested_target do |nested_target|
-            nested_target.save :custom, :integer
-            nested_target.denormalize :child
+        denormalize :order do |order|
+          order.save :custom_field_1, :integer
+          order.denormalize :customer do |customer|
+            customer.save :custom_field_2, :integer
+            customer.denormalize :child
           end
         end
       end
       meta = klass.denormalizer_meta
   
-      target_col_count = Target.columns.count  
-      nested_target_col_count = NestedTarget.columns.count
+      order_col_count = Order.columns.count  
+      customer_col_count = Customer.columns.count
       child_col_count = Child.columns.count
       expect(meta.denormalized_columns.count).
-        to eq(target_col_count+nested_target_col_count+child_col_count+2)
+        to eq(order_col_count+customer_col_count+child_col_count+2)
      
       columns = meta.denormalized_columns.collect(&:name) 
-      expect(columns).to include('custom')
-      expect(columns).to include('d_nested_target_custom')
+      expect(columns).to include('custom_field_1')
+      expect(columns).to include('d_customer_custom_field_2')
     end
   end
 
