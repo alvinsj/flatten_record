@@ -65,25 +65,32 @@ module FlattenRecord
       end
 
       def create_denormalized(normal_instance)
-
         if normal_instance.class.name == self.denormalizer_meta.normal_model.name
           records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
           records.each{|r| r.destroy}
           denormalize_parent(normal_instance)
         
-        else 
-          field_name = denormalized_field(normal_instance.class.name, self.denormalizer_meta)
-          records = self.where("#{field_name} = ?", normal_instance.id)
-          ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
-          records.each{|r| r.destroy}
+        else
+          destroy_related_denormalized(normal_instance)
           
           self.denormalizer_meta.normal_model.where(id: ids).each do |i|
             denormalize_parent(i)
           end
         end
-        
       end
-      
+      def destroy_denormalized(normal_instance)
+        if normal_instance.class.name == self.denormalizer_meta.normal_model.name        
+          ActiveRecord::Base.transaction do 
+            records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
+            records.each{|r| r.destroy}
+          end
+        else
+          destroy_related_denormalized(normal_instance)
+        end
+      end
+
+      private 
+       
       def denormalize_parent(normal_instance)
         denormalizer = FlattenRecord::Denormalizer.new(self.denormalizer_meta, normal_instance)
         record_s = denormalizer.denormalize_record
@@ -100,22 +107,11 @@ module FlattenRecord
         field
       end
 
-      def destroy_denormalized(normal_instance)
-        if normal_instance.class.name == self.denormalizer_meta.normal_model.name        
-          ActiveRecord::Base.transaction do 
-            records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
-            records.each{|r| r.destroy}
-          end
-        else
-          field_name = denormalized_field(normal_instance.class.name, self.denormalizer_meta)
-          records = self.where("#{field_name} = ?", normal_instance.id)
-          ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
-          records.each{|r| r.destroy}
-
-          self.denormalizer_meta.normal_model.where(id: ids).each do |i|
-            denormalize_parent(i)
-          end
-        end
+      def destroy_related_denormalized(normal_instance)
+        field_name = denormalized_field(normal_instance.class.name, self.denormalizer_meta)
+        records = self.where("#{field_name} = ?", normal_instance.id)
+        ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
+        records.each{|r| r.destroy}
       end
     end # /ClassMethods
 
