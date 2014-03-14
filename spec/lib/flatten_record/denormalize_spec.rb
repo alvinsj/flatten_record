@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-def setup_db
+def setup_db_for_denormalize
   ActiveRecord::Base.logger
   ActiveRecord::Schema.define(:version => 1) do
     create_table :targets do |t|
@@ -26,7 +26,7 @@ end
 
 describe FlattenRecord::Denormalize do
   before do
-    setup_db 
+    setup_db_for_denormalize
     class Child < ActiveRecord::Base; end
     class NestedTarget < ActiveRecord::Base; belongs_to :child; end 
     class Target < ActiveRecord::Base; belongs_to :nested_target;end

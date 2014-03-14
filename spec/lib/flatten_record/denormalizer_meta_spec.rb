@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-def setup_db
+def setup_db_for_denormalizer_meta
   ActiveRecord::Base.logger
   ActiveRecord::Schema.define(:version => 1) do
     create_table :orders do |t|
@@ -12,7 +12,7 @@ def setup_db
     end
     create_table :children do |t|
       t.string :name
-      t.integer :parent_id
+      t.integer :customer_id
     end
     create_table :cats do |t|
       t.string :name
@@ -31,7 +31,7 @@ end
 
 describe FlattenRecord::DenormalizerMeta do
   before do
-    setup_db 
+    setup_db_for_denormalizer_meta
     class Cat < ActiveRecord::Base; belongs_to :owner, polymorphic: true ; end
     class Child < ActiveRecord::Base; belongs_to :parent, class_name: :customer; has_many :cats; end
     class Customer < ActiveRecord::Base; has_many :children, class_name: :child; has_many :cats; end 
