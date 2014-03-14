@@ -1,4 +1,4 @@
-# FlattenRecord [![Code Climate](https://codeclimate.com/github/alvinsj/flatten_record.png)](https://codeclimate.com/github/alvinsj/flatten_record)
+# FlattenRecord [![Code Climate](https://codeclimate.com/github/alvinsj/flatten_record.png)](https://codeclimate.com/github/alvinsj/flatten_record)  [![Build Status](https://travis-ci.org/alvinsj/flatten_record.png?branch=master)](https://travis-ci.org/alvinsj/flatten_record)
 
 An ActiveRecord plugin that denormalizes your existing ActiveRecord models. 
 
