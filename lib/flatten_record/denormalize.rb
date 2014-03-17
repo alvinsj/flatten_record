@@ -71,7 +71,7 @@ module FlattenRecord
           denormalize_parent(normal_instance)
         
         else
-          destroy_related_denormalized(normal_instance)
+          ids = destroy_related_denormalized(normal_instance)
           
           self.denormalizer_meta.normal_model.where(id: ids).each do |i|
             denormalize_parent(i)
@@ -112,6 +112,7 @@ module FlattenRecord
         records = self.where("#{field_name} = ?", normal_instance.id)
         ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
         records.each{|r| r.destroy}
+        ids
       end
     end # /ClassMethods
 
