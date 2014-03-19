@@ -17,11 +17,11 @@ Gem::Specification.new do |s|
   s.test_files = Dir["sped/**/*"]
   
   s.add_dependency 'rails'
-  s.add_dependency 'rails-observers'
+#  s.add_dependency 'rails-observers'
 
   s.add_development_dependency "bundler"
   s.add_development_dependency "rspec-rails"
   s.add_development_dependency "sqlite3"
-  
+
   s.license = 'MIT'
 end

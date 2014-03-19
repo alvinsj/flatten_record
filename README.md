@@ -6,6 +6,10 @@ It includes generation of migration, observing the save/destory on target model 
 
 ## Usage
 
+### Adding gem dependency
+    gem 'flatten_record'
+    gem 'rails-observers' # for Rails 4
+
 ### Defining denormalization
     class DenormalizedOrder < ActiveRecord::Base
     	include FlattenRecord::Denormalize
@@ -55,8 +59,10 @@ However, you might want to create a rake task, and run ```create_denormalized```
 
 ### Deleting records
 	irb(main)> DenormalizedOrder.destroy_denormalized(order)
-    
 
+### Refreshing records
+	irb(main)> DenormalizedOrder.last.refresh_denormalized
+    
 ## Versions
 
 #####v1   
