@@ -3,3 +3,6 @@ pkg/*
 .bundle
 Guardfile
 .rspec
+dump.rdb
+*.sqlite3
+*.log
