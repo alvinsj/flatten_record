@@ -78,6 +78,7 @@ module FlattenRecord
           end
         end
       end
+
       def destroy_denormalized(normal_instance)
         if normal_instance.class.name == self.denormalizer_meta.normal_model.name        
           ActiveRecord::Base.transaction do 
@@ -115,6 +116,11 @@ module FlattenRecord
         ids
       end
     end # /ClassMethods
+    
+    def refresh_denormalized
+      parent_model_id = self.send(self.class.denormalizer_meta.id_column.name)
+      self.class.create_denormalized(self.class.parent_model.find(parent_model_id))
+    end
 
   end
 end
