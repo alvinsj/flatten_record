@@ -3,7 +3,6 @@ PATH
   specs:
     flatten_record (0.0.1)
       rails
-      rails-observers
 
 GEM
   remote: http://rubygems.org/
@@ -102,5 +101,6 @@ PLATFORMS
 DEPENDENCIES
   bundler
   flatten_record!
+  rails-observers
   rspec-rails
   sqlite3
