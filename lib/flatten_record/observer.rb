@@ -2,13 +2,13 @@ module FlattenRecord
   class Observer < ActiveRecord::Observer
     def after_save(record)
       if denormalized_model
-        denormalized_model.create_denormalized(record)
+        denormalized_model.create_denormalized(record.reload)
       end
     end
 
     def after_destroy(record)
       if denormalized_model
-        denormalized_model.destroy_denormalized(record)
+        denormalized_model.destroy_denormalized(record.reload)
       end
     end
 
