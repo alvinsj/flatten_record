@@ -8,7 +8,7 @@ module FlattenRecord
 
     def after_destroy(record)
       if denormalized_model
-        denormalized_model.destroy_denormalized(record.reload)
+        denormalized_model.destroy_denormalized(record)
       end
     end
 
