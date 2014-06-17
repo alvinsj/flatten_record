@@ -30,8 +30,26 @@ module FlattenRecord
           self.parent_model.denormalized_models ||= Array.new
           self.parent_model.denormalized_models << klass
         end
+
         Rails.application.config.active_record.observers ||= []  
-        Rails.application.config.active_record.observers << model_observer(model, self.denormalizer_meta)
+        if options[:observer]
+          begin 
+            Rails.application.config.active_record.observers << custom_observer(options[:observer], model, self.denormalizer_meta)
+            puts "success"
+          rescue
+            raise "Custom Observer class initialization failed."
+          end
+        else
+          Rails.application.config.active_record.observers << model_observer(model, self.denormalizer_meta)
+        end
+      end
+
+      def custom_observer(observer_class, model, meta)
+        observer_class.class_eval %Q{ def denormalized_model; #{self.name}; end }
+        observer_class.observe( [model]+child_models(meta) )
+        observer_class.instance
+
+        observer_class.name.underscore
       end
 
       def model_observer(model, meta)
@@ -79,12 +97,19 @@ module FlattenRecord
         end
       end
 
+      def destroy_denormalized_with_id(klass, normal_instance_id)
+        if klass == self.denormalizer_meta.normal_model.name        
+          records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance_id)
+          records.each{|r| r.destroy}
+        else
+          destroy_related_denormalized_with_id(klass, normal_instance_id)
+        end
+      end
+ 
       def destroy_denormalized(normal_instance)
         if normal_instance.class.name == self.denormalizer_meta.normal_model.name        
-          ActiveRecord::Base.transaction do 
-            records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
-            records.each{|r| r.destroy}
-          end
+          records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
+          records.each{|r| r.destroy}
         else
           destroy_related_denormalized(normal_instance)
         end
@@ -106,6 +131,15 @@ module FlattenRecord
           field = temp if temp 
         end
         field
+      end
+    
+      # TODO: should not delete related record, should just clear
+      def destroy_related_denormalized_with_id(klass, normal_instance_id)
+        field_name = denormalized_field(klass, self.denormalizer_meta)
+        records = self.where("#{field_name} = ?", normal_instance_id)
+        ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
+        records.each{|r| r.destroy}
+        ids
       end
 
       def destroy_related_denormalized(normal_instance)
