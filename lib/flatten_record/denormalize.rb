@@ -16,37 +16,83 @@ module FlattenRecord
 
     module ClassMethods 
       def denormalize(model, options={}, &block)
-        self.denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, options.merge(is_root: true, prefix: "d_"))
+        root_options = options.merge(is_root: true, prefix: "d_") 
+
+        self.denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, root_options)
         self.parent_model = model.to_s.camelize.constantize
+
         if block 
-          yield self.denormalizer_meta
+          yield denormalizer_meta
         else
           raise "block is required to specify fields for denormalization"
         end
         
-        klass = self
-        if !self.parent_model.respond_to?(:denormalized_models)
-          self.parent_model.class_attribute :denormalized_models
-          self.parent_model.denormalized_models ||= Array.new
-          self.parent_model.denormalized_models << klass
+        if !parent_model.respond_to?(:denormalized_models)
+          parent_model.class_attribute :denormalized_models
+          parent_model.denormalized_models ||= Array.new
+          parent_model.denormalized_models << self
         end
 
-        Rails.application.config.active_record.observers ||= []  
+        observer = select_observer(options, model)
+        active_record.observers ||= []  
+        active_record.observers << observer unless active_record.observers.include?(observer)
+      end
+
+      def child_models(meta, models=[])
+        if meta
+          models << meta.normal_model
+          meta.children.each do |k, child_meta|
+            models += child_models(child_meta, models)
+          end
+        end
+        models
+      end
+
+      def create_denormalized(normal_instance)
+        if normal_instance.class.name == normal_model.name
+          records = self.where("#{denormalizer_meta.id_column.name} = ?", normal_instance.id)
+          records.each{|r| r.destroy}
+          denormalize_parent(normal_instance)
+        
+        else
+          ids = destroy_related_denormalized(normal_instance)
+          
+          normal_model.where(id: ids).each do |i|
+            denormalize_parent(i)
+          end
+        end
+      end
+
+      def destroy_denormalized(normal_instance)
+        if normal_instance.class.name == normal_model.name        
+          ActiveRecord::Base.transaction do 
+            records = self.where("#{denormalizer_meta.id_column.name} = ?", normal_instance.id)
+            records.each{|r| r.destroy}
+          end
+        else
+          destroy_related_denormalized(normal_instance)
+        end
+      end
+
+      private 
+      def active_record
+        Rails.application.config.active_record
+      end
+
+      def normal_model
+        denormalizer_meta.normal_model
+      end
+            
+      def select_observer(options, model)
         if options[:observer]
           begin 
-            observer =  custom_observer(options[:observer], model, self.denormalizer_meta)
-            active_record.observers << observer
+            custom_observer(options[:observer], model, denormalizer_meta)
           rescue
             raise "Custom Observer class initialization failed."
           end
         else
-          observer = model_observer(model, self.denormalizer_meta)
-          active_record.observers << observer unless active_record.observers.include?(observer)
+          model_observer(model, denormalizer_meta)
         end
-      end
-
-      def active_record
-        Rails.application.config.active_record
       end
 
       def custom_observer(observer_class, model, meta)
@@ -75,54 +121,9 @@ module FlattenRecord
         "flatten_record/#{observer_name}".underscore.to_sym
       end
 
-      def child_models(meta, models=[])
-        if meta
-          models << meta.normal_model
-          meta.children.each do |k, child_meta|
-            models += child_models(child_meta, models)
-          end
-        end
-        models
-      end
-
-      def denormalizer_meta
-        self.denormalizer_meta
-      end
-
-      def parent_model
-        self.parent_model
-      end
-
-      def create_denormalized(normal_instance)
-        if normal_instance.class.name == self.denormalizer_meta.normal_model.name
-          records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
-          records.each{|r| r.destroy}
-          denormalize_parent(normal_instance)
-        
-        else
-          ids = destroy_related_denormalized(normal_instance)
-          
-          self.denormalizer_meta.normal_model.where(id: ids).each do |i|
-            denormalize_parent(i)
-          end
-        end
-      end
-
-      def destroy_denormalized(normal_instance)
-        if normal_instance.class.name == self.denormalizer_meta.normal_model.name        
-          ActiveRecord::Base.transaction do 
-            records = self.where("#{self.denormalizer_meta.id_column.name} = ?", normal_instance.id)
-            records.each{|r| r.destroy}
-          end
-        else
-          destroy_related_denormalized(normal_instance)
-        end
-      end
-
-      private 
-       
       def denormalize_parent(normal_instance)
-        denormalizer = FlattenRecord::Denormalizer.new(self.denormalizer_meta, normal_instance)
+        denormalizer = FlattenRecord::Denormalizer.new(denormalizer_meta, normal_instance)
+        
         record_s = denormalizer.denormalize_record
         record_s.instance_of?(Array) ? record_s.each{|r| r.save} : record_s.save
       end
@@ -138,11 +139,11 @@ module FlattenRecord
       end
 
       def destroy_related_denormalized(normal_instance)
-        field_name = denormalized_field(normal_instance.class.name, self.denormalizer_meta)
+        field_name = denormalized_field(normal_instance.class.name, denormalizer_meta)
         raise "field name cannot be found." if field_name.nil?
         
         records = self.where("#{field_name} = ?", normal_instance.id)
-        ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
+        ids = records.map{ |r| r.send(denormalizer_meta.id_column.name)}.uniq unless records.empty?
         records.each{|r| r.destroy}
         ids
       end
@@ -152,6 +153,5 @@ module FlattenRecord
       parent_model_id = self.send(self.class.denormalizer_meta.id_column.name)
       self.class.create_denormalized(self.class.parent_model.find(parent_model_id))
     end
-
   end
 end
