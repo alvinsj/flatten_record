@@ -1,55 +1,23 @@
 require 'spec_helper'
+require 'models/denormalizer_meta'
 
-def setup_db_for_denormalizer_meta
-  ActiveRecord::Base.logger
-  ActiveRecord::Schema.define(:version => 1) do
-    create_table :orders do |t|
-      t.integer :total
-      t.integer :customer_id
-    end
-    create_table :customers do |t|
-      t.string :name
-    end
-    create_table :children do |t|
-      t.string :name
-      t.integer :customer_id
-    end
-    create_table :cats do |t|
-      t.string :name
-      t.string :owner_type
-      t.integer :owner_id
-    end
+describe FlattenRecord::DenormalizerMeta do 
+  before :all do
+    FlattenRecord::DenormalizerMeta::Test.setup_models
   end
-end
 
-def teardown_db
-  ActiveRecord::Base.connection.tables.each do |table|
-    ActiveRecord::Base.connection.drop_table(table)
-  end
-end
-
-
-describe FlattenRecord::DenormalizerMeta do
-  before do
-    setup_db_for_denormalizer_meta
-    class Cat < ActiveRecord::Base; belongs_to :owner, polymorphic: true ; end
-    class Child < ActiveRecord::Base; belongs_to :parent, class_name: :customer; has_many :cats; end
-    class Customer < ActiveRecord::Base; has_many :children, class_name: :child; has_many :cats; end 
-    class Order < ActiveRecord::Base; belongs_to :customer;end
-  end 
-  after do 
-    teardown_db
+  after :all do
+    FlattenRecord::DenormalizerMeta::Test.delete_models
   end
 
   let(:klass) do
-    class Denormalized < ActiveRecord::Base
-      include FlattenRecord::Denormalize
-    end
+    Denormalized
   end
 
   context "when denormalize() is defined" do
     it 'should have the target model columns' do
       klass.class_eval do
+
         denormalize :order do |order|
         end
       end
