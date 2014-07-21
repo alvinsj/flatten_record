@@ -1,13 +1,16 @@
 module FlattenRecord
   class Observer < ActiveRecord::Observer
-    
     def after_commit(record)
-      #puts "wwwww: #{record.send(:transaction_include_action?, :create)}"
-      #puts "wwwww: #{record.send(:transaction_include_action?, :update)}"
-      #puts "ggggg: #{record.send(:transaction_include_action?, :destroy)}"
-      _after_save(record) if record.send(:transaction_include_action?, :create) || record.send(:transaction_include_action?, :update)
+      if @destroyed && @destroyed == record 
+        _after_destroy(record)
+        @destroy = false
+      else
+        _after_save(record)
+      end
+    end
 
-      _after_destroy(record) if record.send(:transaction_include_action?, :destroy)
+    def after_destroy(record)
+      @destroyed = record
     end
 
     def _after_save(record)
