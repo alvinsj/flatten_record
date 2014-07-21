@@ -30,8 +30,31 @@ module FlattenRecord
           self.parent_model.denormalized_models ||= Array.new
           self.parent_model.denormalized_models << klass
         end
+
         Rails.application.config.active_record.observers ||= []  
-        Rails.application.config.active_record.observers << model_observer(model, self.denormalizer_meta)
+        if options[:observer]
+          begin 
+            observer =  custom_observer(options[:observer], model, self.denormalizer_meta)
+            active_record.observers << observer
+          rescue
+            raise "Custom Observer class initialization failed."
+          end
+        else
+          observer = model_observer(model, self.denormalizer_meta)
+          active_record.observers << observer unless active_record.observers.include?(observer)
+        end
+      end
+
+      def active_record
+        Rails.application.config.active_record
+      end
+
+      def custom_observer(observer_class, model, meta)
+        observer_class.class_eval %Q{ def denormalized_model; #{self.name}; end }
+        observer_class.observe( [model]+child_models(meta) )
+        observer_class.instance
+
+        observer_class.name.underscore
       end
 
       def model_observer(model, meta)
@@ -40,6 +63,12 @@ module FlattenRecord
         observer_class.observe( [model]+child_models(meta) )
 
         observer_name = "#{self.table_name.camelize}Observer" 
+        
+        # Override if previously defined
+        if FlattenRecord.const_defined?(observer_name) 
+          FlattenRecord.send(:remove_const, observer_name)
+        end
+
         klass = FlattenRecord.const_set(observer_name,observer_class)
         klass.instance # initialize instance to make it work
 
@@ -110,6 +139,8 @@ module FlattenRecord
 
       def destroy_related_denormalized(normal_instance)
         field_name = denormalized_field(normal_instance.class.name, self.denormalizer_meta)
+        raise "field name cannot be found." if field_name.nil?
+        
         records = self.where("#{field_name} = ?", normal_instance.id)
         ids = records.map{ |r| r.send(self.denormalizer_meta.id_column.name)}.uniq unless records.empty?
         records.each{|r| r.destroy}
