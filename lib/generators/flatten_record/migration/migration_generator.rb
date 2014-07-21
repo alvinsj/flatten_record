@@ -11,7 +11,11 @@ module FlattenRecord
       argument :name, :description => 'path to model'
 
       def generate_files
-        return puts("Error. #{name.camelize} is not found") unless valid?
+        if !valid? 
+          puts("Error. #{name.camelize} is not found")
+          return
+        end
+
         defined_classes.each do |class_name|
           @klass = class_name.constantize
           @table_name = @klass.table_name
@@ -34,8 +38,9 @@ module FlattenRecord
       def diff_and_generate
         if !add_columns.empty? || !drop_columns.empty? 
           puts "Generating migration based on the difference.."
-          puts "Add columns: " + add_columns.collect(&:name).join(', ') unless add_columns.empty?
-          puts "Drop columns: " + drop_columns.collect(&:name).join(', ') unless drop_columns.empty?
+
+          puts "Add columns: " + add_columns_names unless add_columns.empty?
+          puts "Drop columns: " + drop_columns_names unless drop_columns.empty?
 
           @migration = add_columns.empty? ? 
             "drop_"+drop_columns.first.name+"_from" : "add_"+add_columns.first.name+"_to"
@@ -44,8 +49,16 @@ module FlattenRecord
         end
       end
 
+      def add_columns_names
+        add_columns.collect(&:name).join(', ')
+      end
+
+      def drop_columns_names
+        drop_columns.collect(&:name).join(', ')
+      end
+
       def add_columns
-         @add_columns ||= @klass.denormalizer_meta.denormalized_columns.inject([]) do |cols, col| 
+        @add_columns ||= denormalized_columns.inject([]) do |cols, col| 
           cols ||= []
           @klass.columns.collect(&:name).include?(col.name) ?
             cols : cols << col
@@ -56,10 +69,14 @@ module FlattenRecord
         @drop_columns ||= @klass.columns.inject([]) do |cols, col|
           next if col.name == 'id'
           cols ||= []
-          @klass.denormalizer_meta.denormalized_columns.collect(&:name).include?(col.name) ?
+          denormalized_columns.collect(&:name).include?(col.name) ?
             cols : cols << col
         end
-      end 
+      end
+
+      def denormalized_columns
+        @klass.denormalizer_meta.denormalized_columns
+      end
 
       def defined_classes
         @klass = name.camelize
