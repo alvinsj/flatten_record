@@ -67,13 +67,13 @@ module FlattenRecord
         
         protected
         def denormalized_class
-          @meta.denormalized_model
+          @meta.target_denormalized_model
         end
 
         def denormalized_field(normal, meta)
-          return "#{meta.prefix}#{meta.id_column.name}" if meta.normal_model.name == normal
+          return "#{meta.columns_prefix}#{meta.id_column.name}" if meta.target_model.name == normal
           field = nil
-          meta.children.each do |child_name,child| 
+          meta.child_metas.each do |child_name,child| 
             temp = denormalized_field(normal, child)
             field = temp if temp 
           end

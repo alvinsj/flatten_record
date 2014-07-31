@@ -42,8 +42,8 @@ module FlattenRecord
         protected 
         def child_models(meta, models=[])
           if meta
-            models << meta.normal_model
-            meta.children.each do |k, child_meta|
+            models << meta.target_model
+            meta.child_metas.each do |k, child_meta|
               models += child_models(child_meta, models)
             end
           end
@@ -55,7 +55,7 @@ module FlattenRecord
         end
   
         def normal_model
-          denormalizer_meta.normal_model
+          denormalizer_meta.target_model
         end
         
         def select_observer(options, model)
@@ -79,7 +79,7 @@ module FlattenRecord
         end
 
         def denormalized_model
-          denormalizer_meta.denormalized_model
+          denormalizer_meta.target_denormalized_model
         end
   
         def model_observer(model, meta)

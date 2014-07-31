@@ -7,16 +7,16 @@ module FlattenRecord
     end
 
     def denormalize_record(to_record=nil)
-      to_record ||= @meta.denormalized_model.new
+      to_record ||= @meta.target_denormalized_model.new
       to_record = assign_custom_attrs(to_record) if @meta.custom_fields.present?
       to_record = assign_attrs(to_record)
-      to_record = assign_children(to_record) if @meta.children.present?
+      to_record = assign_children(to_record) if @meta.child_metas.present?
       to_record
     end
 
     private
     def assign_children(to_record)
-      @meta.children.each do |col, child_meta|
+      @meta.child_metas.each do |col, child_meta|
         association = @normal.class.reflect_on_association(col)
         link = @normal.send(col)
         next if link.blank? # no associated record found
@@ -31,7 +31,7 @@ module FlattenRecord
     end
 
     def assign_attrs(to_record) 
-      @meta.base_columns.each do |attr|
+      @meta.target_columns.each do |attr|
         to_record = assign_attr(to_record, "#{prefix}#{attr.name}", @normal.send(attr.name))
       end
       to_record = assign_attr(to_record, "#{prefix}#{@meta.id_column.name}", @normal.send(:id))
@@ -46,7 +46,7 @@ module FlattenRecord
     end
     
     def prefix
-      @enable_prefix ? "#{@meta.prefix}" : ''
+      @enable_prefix ? "#{@meta.columns_prefix}" : ''
     end
     
     def assign_attr(to_record, attr, value)
@@ -58,6 +58,5 @@ module FlattenRecord
         to_record
       end
     end
-    
   end
 end
