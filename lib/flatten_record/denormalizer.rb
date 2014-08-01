@@ -7,7 +7,7 @@ module FlattenRecord
     end
 
     def denormalize_record(to_record=nil)
-      to_record ||= @meta.target_denormalized_model.new
+      to_record ||= @meta.model.new
       to_record = assign_custom_attrs(to_record) if @meta.custom_fields.present?
       to_record = assign_attrs(to_record)
       to_record = assign_children(to_record) if @meta.child_metas.present?

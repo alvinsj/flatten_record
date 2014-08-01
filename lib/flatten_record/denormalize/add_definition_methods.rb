@@ -8,12 +8,6 @@ module FlattenRecord
         self.denormalizer_meta = FlattenRecord::DenormalizerMeta.new(model, self, root_options)
         self.normal_model = model.to_s.camelize.constantize
 
-        if block 
-          yield denormalizer_meta
-        else
-          raise "block is required to specify fields for denormalization"
-        end
-        
         if !normal_model.respond_to?(:denormalized_models)
           normal_model.class_attribute :denormalized_models
           normal_model.denormalized_models ||= Array.new
@@ -22,10 +16,11 @@ module FlattenRecord
 
         AddObservers.new(model, options).process(denormalizer_meta)
 
+        yield denormalizer_meta if block
       end
 
       class AddObservers
-        attr_accessor :denormalizer_meta
+        attr_reader :denormalizer_meta
         
         def initialize(model, options)
           @options = options
@@ -57,7 +52,11 @@ module FlattenRecord
         def normal_model
           denormalizer_meta.target_model
         end
-        
+ 
+        def denormalized_model
+          denormalizer_meta.model
+        end
+       
         def select_observer(options, model)
           if options[:observer]
             begin 
@@ -76,10 +75,6 @@ module FlattenRecord
           observer_class.instance
   
           observer_class.name.underscore
-        end
-
-        def denormalized_model
-          denormalizer_meta.target_denormalized_model
         end
   
         def model_observer(model, meta)

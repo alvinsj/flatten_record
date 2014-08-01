@@ -1,118 +1,112 @@
 module FlattenRecord
   class DenormalizerMeta
 
-    attr_reader :target, :options, :denormalized_model  
-    delegate :model, :denormalized_model, :columns, to: :target, prefix: true
-    delegate :child_metas, :denormalized_columns, :id_column, :columns_prefix, :custom_fields, to: :target
+    attr_reader :target_model, :model, :options, 
+                :child_metas, :custom_columns, :field_options
 
-    def initialize(model_sym, denormalized_model, options={})
-      @options = options
-      @target = Target.new(model_sym, denormalized_model, options)
-
-      #model_sym = options[:as] if options[:as]
+    def initialize(target_model_sym, model, options={}) 
+      sym = options[:as] ? options[:as] : target_model_sym
       
-      @is_root = options[:is_root]
+      @target_model = sym.to_s.singularize.camelize.constantize
+      @model = model
+      @options = options
+      
+      @custom_columns = []
+      @child_metas = @field_options = {}
+    end
+
+    #
+    # main methods 
+    #
+    def denormalize(field, field_options={}, &block)
+      meta = denormalize_field(field, field_options)
+      yield meta if block
     end
     
-    # called by denormalizer block 
-    def denormalize(field, field_options={}, &block)
-      association = target.model.reflect_on_association(field)
-      raise "Invalid association #{field}" if association.nil?
-
-      associated_model = field_options[:as].present? ? 
-          field_options[:as].to_s.camelize.constantize : 
-          association.class_name.camelize.constantize
-      
-      target.field_options[field] = field_options
-      child_prefix = "#{target.columns_prefix}#{field.to_s}_" 
-      
-      target.child_metas[field] = 
-        DenormalizerMeta.new(field, target.denormalized_model, field_options.merge(prefix: child_prefix) )
-          
-      if block 
-        yield target.child_metas[field]
-      end 
-    end
-
     def save(col_name, col_type, extras={})
-      target.custom_columns << ActiveRecord::ConnectionAdapters::
-          Column.new(col_name.to_s, extras[:default], col_type, extras[:null])
+      add_custom_column(col_name, col_type, extras)
+    end
+    
+    # 
+    # properties
+    #
+    def custom_fields
+      cols = custom_columns.map{|col| [col.name, col.type]}
+      Hash[*(cols.flatten)]
     end
 
-    class Target
-      attr_accessor :custom_columns, :child_metas, :field_options
-      attr_reader :denormalized_model, :sym, :options
+    def id_column
+      @id_column ||= new_column(id_column_name, nil, :integer, true )
+    end
 
-      def initialize(target_model_sym, denormalized_model, options={})
-        @sym = options[:as] ? options[:as] : target_model_sym
-        @denormalized_model = denormalized_model
-        @options = options
+    def columns_prefix
+      "#{options[:prefix]}"
+    end
+ 
+    def denormalized_columns
+      @denomalized_columns ||= 
+        prefix_columns(columns_prefix, all_columns) + child_columns
+    end 
+ 
+    def target_columns
+      return @columns unless @columns.blank?
+
+      @columns = target_model.columns.select{|col| col.name!='id' }
+      if options[:only]
+        @columns = @columns.select{|col| options[:only].include?(col.name.to_sym) }
+      elsif options[:except]
+        @columns = @columns.select{|col| !options[:except].include?(col.name.to_sym) }
       end
+      @columns
+    end
 
-      def model
-        @model ||= @sym.to_s.singularize.camelize.constantize
+    private
+    def denormalize_field(field, field_options={})
+      # enforce association information
+      raise "Invalid association #{field}" if associated_with?(field)
+       
+      opts = field_options.merge(prefix: field_prefix(field)) 
+      @child_metas[field] = DenormalizerMeta.new(field, target_model, opts)
+    end
+
+    def add_custom_column(col_name, col_type, extras={})       
+      @custom_columns << 
+        new_column(col_name.to_s, extras[:default], col_type, extras[:null])
+    end
+
+    def prefix_columns(namespace, all_columns)
+      return all_columns if options[:is_root]
+      all_columns.map do |col| 
+        col_name = "#{namespace}#{col.name}"; col
+        new_column(col_name, col.default, col.sql_type, col.null)
       end
+    end
 
-      def field_options
-        @field_options ||= {}
-      end
+    def new_column(col_name, col_default, col_type, not_null)
+      ActiveRecord::ConnectionAdapters::Column.new(col_name, col_default, col_type, not_null)
+    end
 
-      def child_metas
-        @child_metas ||= {}
-      end
+    #
+    # quick method
+    #
+    def associated_with?(field) 
+      target_model.reflect_on_association(field).nil?
+    end
 
-      def custom_columns
-        @custom_columns ||= []
-      end
-
-      def columns
-        return @columns unless @columns.blank?
-
-        @columns = model.columns.select{|col| col.name!='id' }
-        if options[:only]
-          @columns = @columns.select{|col| options[:only].include?(col.name.to_sym) }
-        elsif options[:except]
-          @columns = @columns.select{|col| !options[:except].include?(col.name.to_sym) }
-        end
-        @columns
-      end
-
-      def custom_fields
-        cols = custom_columns.map{|col| [col.name, col.type]}
-        Hash[*(cols.flatten)]
-      end
-
-      def id_column
-        @id_column ||= ActiveRecord::ConnectionAdapters::
-          Column.new(id_column_name, nil, :integer, true )
-      end
-
-      def columns_prefix
-        "#{options[:prefix]}"
-      end
+    def id_column_name
+      target_model.table_name.singularize + "_id"
+    end
    
-      def denormalized_columns
-        prefix_columns(columns_prefix, [id_column] + columns + custom_columns) + child_denormalizers_columns
-      end 
+    def all_columns
+      [id_column] + target_columns + custom_columns 
+    end
 
-      private
-      def prefix_columns(namespace, all_columns)
-        return all_columns if options[:is_root]
-        all_columns.
-          map do |col| 
-            col_name = "#{namespace}#{col.name}"; col
-            ActiveRecord::ConnectionAdapters::Column.
-              new(col_name, col.default, col.sql_type, col.null)
-          end
-      end
+    def child_columns
+      child_metas.map{|k,v| v.denormalized_columns }.flatten
+    end
 
-      def id_column_name
-        model.table_name.singularize + "_id"
-      end
-
-      def child_denormalizers_columns
-        child_metas.map{|k,v| v.denormalized_columns }.flatten
-      end
+    def field_prefix(field)
+      "#{columns_prefix}#{field.to_s}_" 
     end
 
   end
