@@ -54,7 +54,7 @@ class FlattenRecord::Flattener::Test
     end
     
     Customer.class_eval do
-      has_many :children, foreign_key: "parent_id"
+      has_many :children, class_name: "Child", foreign_key: "parent_id"
       has_many :cats
     end
     
