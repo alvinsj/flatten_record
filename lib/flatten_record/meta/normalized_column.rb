@@ -2,9 +2,10 @@ module FlattenRecord
   module Meta
     class NormalizedColumn < Node
       def denormalize(instance, to_record)
-        children.map do|child|
-          child.denormalize(instance, to_record) 
-        end.flatten
+        children.each do|child|
+          to_record = child.denormalize(instance, to_record) 
+        end
+        to_record
       end
  
       def all_columns

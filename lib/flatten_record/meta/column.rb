@@ -12,7 +12,7 @@ module FlattenRecord
 
       def denormalize(instance, to_record)
         if instance.respond_to?(@column.name)
-          assign_value(to_record, name) do |record|
+          to_record = assign_value(to_record, name) do |record|
             instance.send(@column.name.to_sym)
           end
         else
@@ -25,13 +25,14 @@ module FlattenRecord
       
       def assign_value(to_record, name, &block)
         if to_record.respond_to?(:each)
-          to_record.each do |record|
+          to_record.map! do |record|
             value = yield(record)
             record.send("#{name}=", value)
           end
         else
           to_record.send("#{name}=", yield(to_record))
         end
+        to_record
       end
       
     end # /Column

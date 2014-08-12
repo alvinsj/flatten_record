@@ -20,12 +20,11 @@ module FlattenRecord
       end
 
       def create_with(normal)
-        flat_meta.root.denormalize(normal)
+        records = flat_meta.root.denormalize(normal, self.new)
+        records.each(&:save)
+        records
       end
 
-      def destroy_with(normal)
-        flat_meta.root.destroy(normal)
-      end
     end # /ClassMethods
     
   end

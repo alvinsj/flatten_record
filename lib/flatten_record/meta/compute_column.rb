@@ -8,7 +8,7 @@ module FlattenRecord
 
       def denormalize(instance, to_record)
         if to_record.respond_to?(@column.name)
-          assign_value(to_record, name) do |record|
+          to_record = assign_value(to_record, name) do |record|
             record.send(@column.name.to_sym)
           end
         else
