@@ -2,9 +2,7 @@ module FlattenRecord
   module Meta
     class NormalizedColumn < Node
       def denormalize(instance, to_record)
-        puts children.map(&:class).inspect
         children.map do|child|
-          puts child.class.inspect
           child.denormalize(instance, to_record) 
         end.flatten
       end
@@ -111,12 +109,9 @@ module FlattenRecord
 
       def allow_column?(col, definition)
         return false if col.primary
-        puts col.name + definition[:only].inspect+ "/" + definition[:except].inspect
         if definition[:only].present?
-          puts "sssssssss #{col.name.to_sym}"
           definition[:only].include?(col.name.to_sym) 
         elsif definition[:except].present?
-          puts "ddddddddddd #{col.name.to_sym}"
           !definition[:except].include?(col.name.to_sym) 
         else
           true
