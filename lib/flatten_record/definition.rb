@@ -4,6 +4,7 @@ module FlattenRecord
       @definition = definition
       @errors = []
       @methods = []
+      @compute = []
       @include = {}
       @except = []
       @only = []
@@ -42,17 +43,24 @@ module FlattenRecord
     protected   
     def validate_except(attrs)
       attrs.each do |attr|
-        error = "unknown attributes '#{attr}' in #{@target_model.name.to_s}"
-        @errors << error unless target_attr?(attr)
+        error = "unknown attribute '#{attr}' in #{@target_model.name.to_s}"
+        @errors << error unless target_method?(attr)
         @except << attr
       end
     end
-    alias_method :validate_only, :validate_except
+    
+    def validate_only(attrs)
+      attrs.each do |attr|
+        error = "unknown attribute '#{attr}' in #{@target_model.name.to_s}"
+        @errors << error unless target_method?(attr)
+        @only << attr
+      end
+    end
    
     def validate_methods(methods)
       methods.each do |method| 
-        error = "undefined method '#{method}' in #{@model.name.to_s}"
-        @errors << error unless model_method?(method)
+        error = "undefined method '#{method}' in #{@target_model.name}"
+        @errors << error unless target_method?(method)
         @methods << method
       end      
     end
@@ -66,13 +74,17 @@ module FlattenRecord
       end
     end
 
-    private
-    def target_attr?(attr)
-      @target_model.respond_to?(attr)
+    def validate_compute(model_methods)
+      @compute = model_methods
     end
-    
+
+    private
     def model_method?(method)
       @model.method_defined?(method) 
+    end
+   
+    def target_method?(method)
+      @target_model.method_defined?(method) 
     end
   end
 end

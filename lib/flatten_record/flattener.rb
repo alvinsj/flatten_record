@@ -16,14 +16,14 @@ module FlattenRecord
         meta_node = Meta::RootNode.new(target_model, self)
         meta_node.build(definition)
 
-        self.flat_meta = OpenStruct.new(root: meta_node)
+        self.flat_meta = Struct.new(:root).new(meta_node)
       end
 
-      def create_denormalized(normal)
+      def create_with(normal)
         flat_meta.root.denormalize(normal)
       end
 
-      def destroy_denormalized(normal)
+      def destroy_with(normal)
         flat_meta.root.destroy(normal)
       end
     end # /ClassMethods
