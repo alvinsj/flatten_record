@@ -34,7 +34,7 @@ describe FlattenRecord::Denormalize do
         denormalize :target do|t| ;end
       end
       expect(klass.denormalizer_meta).to_not be_nil
-      expect(klass.parent_model.name).to eql(Target.name)
+      expect(klass.normal_model.name).to eql(Target.name)
       expect(klass).to respond_to(:create_denormalized)
       expect(klass).to respond_to(:destroy_denormalized)
     end
