@@ -23,6 +23,12 @@ module FlattenRecord
         to_record
       end
 
+      def nullify(to_record)
+        assign_value(to_record, name) do |record|
+          nil
+        end
+      end
+
       protected 
       def assign_value(to_record, name, &block)
         if to_record.respond_to?(:each)

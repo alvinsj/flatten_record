@@ -36,14 +36,14 @@ describe FlattenRecord::Meta::RootNode do
       root_node.build(definition)
 
       expect(root_node[:include]).to_not be_nil
-      expect(root_node[:include].count).to be_eql(1)
+      expect(root_node[:include].count).to eq(1)
       
       current_node = root_node
       [Order, Customer, Child, Cat].each do |klass|
-         expect(current_node.target_model.to_s).to be_eql(klass.to_s)
+         expect(current_node.target_model.to_s).to eq(klass.to_s)
 
          if klass != Cat
-           expect(current_node[:include].count).to be_eql(1)
+           expect(current_node[:include].count).to eq(1)
            current_node = current_node[:include].first[1]
          end
       end
@@ -53,11 +53,11 @@ describe FlattenRecord::Meta::RootNode do
       root_node.build(definition)
 
       expect(root_node[:include]).to_not be_nil
-      expect(root_node[:include].count).to be_eql(1)
+      expect(root_node[:include].count).to eq(1)
       
       current_node = root_node
       [Order, Customer, Child, Cat].each do |klass|
-         expect(current_node.target_model.to_s).to be_eql(klass.to_s) 
+         expect(current_node.target_model.to_s).to eq(klass.to_s) 
          current_node = current_node[:include].blank? ? nil : current_node[:include].first[1]
       end
     end
@@ -95,7 +95,7 @@ describe FlattenRecord::Meta::RootNode do
       [Order, Customer, Child, Cat].each do |klass|
         node = new_root_node.traverse_by(:target_model, klass)
         expect(node).to_not be_nil
-        expect(node.target_model.to_s).to be_eql(klass.to_s)
+        expect(node.target_model.to_s).to eq(klass.to_s)
       end
     end
   end

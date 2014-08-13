@@ -26,8 +26,7 @@ describe FlattenRecord::Flattener do
           50
         end
       end
-      Child
-      #raise Child.attribute_method?('name').inspect
+      
       Denormalized.class_eval do    
         denormalize :order, {
           compute: [:total_in_usd],
@@ -76,7 +75,7 @@ describe FlattenRecord::Flattener do
       
       column_names = meta.root_node.all_columns.map(&:name) 
 
-      expect(column_names.count).to be_eql(10)
+      expect(column_names.count).to eq(10)
 
       expect(column_names).to be_include("order_id")
       expect(column_names).to be_include("total")
@@ -93,16 +92,16 @@ describe FlattenRecord::Flattener do
     context '.create_with' do
       it 'should be able to create denormalized record' do
         denormalized = klass.create_with(order_with_one_child) 
-        expect(denormalized.count).to be_eql(1)
+        expect(denormalized.count).to eq(1)
   
         record = denormalized.first
         
-        expect(record.total).to be_eql(100)
-        expect(record.grand_total).to be_eql(50)
-        expect(record.total_in_usd).to be_eql(1000)
-        expect(record.customer_name).to be_eql("Alvin")
-        expect(record.customer_child_name).to be_eql("Ethan")
-        expect(record.customer_child_cat_name).to be_eql("Meow")
+        expect(record.total).to eq(100)
+        expect(record.grand_total).to eq(50)
+        expect(record.total_in_usd).to eq(1000)
+        expect(record.customer_name).to eq("Alvin")
+        expect(record.customer_child_name).to eq("Ethan")
+        expect(record.customer_child_cat_name).to eq("Meow")
       end
     end #/.create_with
 
@@ -110,16 +109,16 @@ describe FlattenRecord::Flattener do
       it 'should be able to find related records' do 
         denormalized = klass.create_with(order_with_one_child) 
         records = klass.find_with(order_with_one_child.customer)
-        expect(records.count).to be_eql(1)
+        expect(records.count).to eq(1)
   
         record = records.first
         
-        expect(record.total).to be_eql(100)
-        expect(record.grand_total).to be_eql(50)
-        expect(record.total_in_usd).to be_eql(1000)
-        expect(record.customer_name).to be_eql("Alvin")
-        expect(record.customer_child_name).to be_eql("Ethan")
-        expect(record.customer_child_cat_name).to be_eql("Meow")
+        expect(record.total).to eq(100)
+        expect(record.grand_total).to eq(50)
+        expect(record.total_in_usd).to eq(1000)
+        expect(record.customer_name).to eq("Alvin")
+        expect(record.customer_child_name).to eq("Ethan")
+        expect(record.customer_child_cat_name).to eq("Meow")
         
       end
     end #/.find_with
@@ -131,33 +130,32 @@ describe FlattenRecord::Flattener do
         order.save
 
         denormalized = klass.create_with(order) 
-        expect(klass.count).to be_eql(1)
+        expect(klass.count).to eq(1)
   
         record = denormalized.first
-        expect(record.total).to be_eql(1000)
+        expect(record.total).to eq(1000)
 
         # change attribute
         order.total = 2000
         order.save
 
         changed = klass.update_with(order) 
-        puts klass.all.inspect
-        expect(klass.count).to be_eql(1)
+        expect(klass.count).to eq(1)
         
         record = changed.first
         
-        expect(record.id).to be_eql(denormalized.first.id)
-        expect(record.total).to be_eql(2000)
+        expect(record.id).to eq(denormalized.first.id)
+        expect(record.total).to eq(2000)
       end
 
       it 'should be able to update related records' do 
         order = order_with_one_child
 
         denormalized = klass.create_with(order) 
-        expect(klass.count).to be_eql(1)
+        expect(klass.count).to eq(1)
   
         record = denormalized.first
-        expect(record.customer_child_cat_name).to be_eql("Meow")
+        expect(record.customer_child_cat_name).to eq("Meow")
 
         cat = order.customer.children.first.cats.first
         cat.name = "Phew"
@@ -165,12 +163,12 @@ describe FlattenRecord::Flattener do
 
         changed = klass.update_with(cat) 
         puts klass.all.inspect
-        expect(klass.count).to be_eql(1)
+        expect(klass.count).to eq(1)
         
         record = changed.first
         
-        expect(record.id).to be_eql(denormalized.first.id)
-        expect(record.customer_child_cat_name).to be_eql("Phew")
+        expect(record.id).to eq(denormalized.first.id)
+        expect(record.customer_child_cat_name).to eq("Phew")
       end
  
     end #/.update_with
@@ -178,10 +176,10 @@ describe FlattenRecord::Flattener do
     context '.destroy_with' do
       it 'should be able to destroy related records' do 
         denormalized = klass.create_with(order_with_one_child) 
-        expect(klass.count).to be(1)
+        expect(klass.count).to eq(1)
   
         klass.destroy_with(order_with_one_child)
-        expect(klass.count).to be(0)
+        expect(klass.count).to eq(0)
       end
     end #/.find_with
 
