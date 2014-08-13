@@ -7,6 +7,7 @@ module FlattenRecord
         end
         to_record
       end
+      alias_method :update, :denormalize
  
       def all_columns
         return @columns if @columns
@@ -23,6 +24,30 @@ module FlattenRecord
       
       def prefix
         parent.prefix+target_model.name.underscore.to_s + "_"
+      end
+
+      def traverse_by(attr, value)
+        attr_value = instance_variable_get("@#{attr}")
+
+        if !value.respond_to?(:to_s) || !attr_value.respond_to?(:to_s)
+          raise "traverse error: to_s method required for comparison"
+        end
+        
+        if value.to_s == attr_value.to_s
+          return self
+        else
+          found = nil
+          @include.values.each do |node|
+            found = node.traverse_by(attr, value)
+          end 
+          return found
+        end
+      end
+
+      def id_column
+        return @id_column unless @id_column.nil?
+        primary_key = target_columns.select(&:primary).first
+        @id_column = IdColumn.new(self, primary_key, target_model, model)
       end
 
       protected
@@ -95,11 +120,6 @@ module FlattenRecord
           raise "association type '#{association.macro}' with '#{child}' is not supported"
         end
         node 
-      end
-
-      def id_column
-        primary_key = target_columns.select(&:primary).first
-        IdColumn.new(self, primary_key, target_model, model)
       end
 
       def columns_from_definition(definition)

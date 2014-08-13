@@ -1,6 +1,8 @@
 module FlattenRecord
   module Meta
     class Column < Node
+      attr_reader :column
+
       def initialize(parent, col, target_model, model)
         super(parent, target_model, model)
         @column = col
@@ -22,7 +24,6 @@ module FlattenRecord
       end
 
       protected 
-      
       def assign_value(to_record, name, &block)
         if to_record.respond_to?(:each)
           to_record.map! do |record|

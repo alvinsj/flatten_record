@@ -5,9 +5,23 @@ module FlattenRecord
 
       def initialize(parent, target_model, model)
         @parent = parent
-        @target_model = target_model.is_a?(Class) ? 
+        @target_model = target_model.is_a?(ActiveRecord::Base) ? 
           target_model : target_model.to_s.camelize.constantize
         @model = model
+      end
+
+      def traverse_by(attr, value)
+        attr_value = instance_variable_get("@#{attr}")
+
+        if !value.respond_to?(:to_s) || !attr_value.respond_to?(:to_s)
+          raise "traverse error: to_s method required for comparison"
+        end
+ 
+        if value.to_s == attr_value.to_s
+          return self
+        else 
+          return nil
+        end
       end
  
       def prefix
