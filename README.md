@@ -73,11 +73,22 @@ It includes generation of migration, observing the save/destory on target model 
 
 ## Other Modules
 
-### ActiveRecord Observers
-	include FlattenRecord::Observers
+### Model Observer
+Observe changes in the normalized model and create denormalized records. 
+
+The implementaion uses `after_commit` method in `ActiveRecord::Observer`.  
+(_Note: normalized model and all its children will be observed._)
+
+Add gem dependency
+ 
+	gem 'rails-observers'
 	
-Eager loading is required to load _ActiveRecord Observers_ on app initialization.  
-  
+Include module in denormalized model, then observers will be included.
+	
+	include FlattenRecord::Observer
+	
+Eager loading is required to load _ActiveRecord::Observer_ on app initialization.  
+	
 	# under initializers/<denormalize>.rb or lib/<engine>/engine.rb 
 	config.after_initialize do
       require_dependency root.join('app/models/denormalized_order').to_s
