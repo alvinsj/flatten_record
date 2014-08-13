@@ -6,72 +6,98 @@ It includes generation of migration, observing the save/destory on target model 
 
 ## Usage
 
-### Adding gem dependency
+### Add gem dependency
     gem 'flatten_record'
-    gem 'rails-observers' # for Rails 4
 
-### Defining denormalization
+### Include module
+	include FlattenRecord::Flattener
+	
+### Define denormalization
+	class Order < ActiveRecord::Base
+		def total_in_usd
+			# calculation
+		end
+	end
+	
     class DenormalizedOrder < ActiveRecord::Base
-    	include FlattenRecord::Denormalize
+    	include FlattenRecord::Flattener
 
-    	denormalize :order do |order|
-      		# :belongs_to association
-      		order.denormalize :customer
+    	denormalize :order, {
+      		include: { 
+      		    # :belongs_to association
+      			customer: {}
       		
-      		# :has_many association, create multiple denormalized records  
-      		order.denormalize :line_items do |line_item|
-        		line_item.denormalize(:redeem, as: :discount){|d| d.denormalize(:coupon) }
-      		end
-          order.save :order_sum, :decimal
-    	end
+      			# :has_many association, create multiple denormalized records  
+      			line_items: {}
+  			},
+  			method: [
+          		# save methods defined in Normalized model
+          		:total_in_usd
+          	],
+          	compute: [
+          		# new integer column with method defined below
+          		:line_items_sum,
+          		
+          		# new column with different type
+          		{ details: { sql_type: :string} }
+          	]
+    	}
 
     	private
-    	def _get_order_sum(order)
+    	def line_item_sum(order)
       		order.line_items.collect(&:total).inject(:+)
     	end
   	end
   	
-### Generating migration file
+### Generate migration file
     $ rails generate flatten_record:migration denormalized_order
 	  create  db/migrate/20140313034700_create_table_denormalized_orders.rb	
     
-### Updating changes and generating migration file
+### Update changes and generate new migration file
     $ rails generate flatten_record:migration denormalized_order
     Warning. Table already exists: denormalized_orders
 	Generating migration based on the difference..
 	Add columns: d_line_items_description
       create  db/migrate/20140313034736_add_d_line_items_description_to_denormalized_orders.rb
+      
 
-### Eager loading
-Eager loading the denormalized model class is required to load _ActiveRecord observers_ for the target model on app initialization.  
+### Denormalization methods
+#### Create record(s)
+	irb(main)> DenormalizedOrder.create_with(order)
+
+#### Deleting record(s)
+	irb(main)> DenormalizedOrder.destroy_with(order)
+
+#### Update record(s)
+	irb(main)> DenormalizedOrder.update_with(order)
+
+## Other Modules
+
+### ActiveRecord Observers
+	include FlattenRecord::Observers
+	
+Eager loading is required to load _ActiveRecord Observers_ on app initialization.  
   
-	# initializers/<denormalize>.rb or lib/<engine>/engine.rb 
+	# under initializers/<denormalize>.rb or lib/<engine>/engine.rb 
 	config.after_initialize do
       require_dependency root.join('app/models/denormalized_order').to_s
     end
-
-### Denormalizing 
-After adding "eager loading"(see above), _ActiveRecord observers_ are added to the _target model and it's defined association_ to refresh denormalized records.
-
-However, you might want to create a rake task, and run ```create_denormalized``` to denormalize the exisiting records.
-  
-	irb(main)> DenormalizedOrder.create_denormalized(order)
-
-### Deleting records
-	irb(main)> DenormalizedOrder.destroy_denormalized(order)
-
-### Refreshing records
-	irb(main)> DenormalizedOrder.last.refresh_denormalized
     
 ## Versions
 
-#####v1   
-_still in development_  
+#####v1  
+- tree-based denormalization: nicer code & structure √ 
+- new DSL + syntax √ 
+- custom column prefix in denormalized table √  
+- introduce :methods & :compute √ 
+- update denormalized records 
+- remove rails gem dependency
+
+#####v0   
 - denormalize fields and nested fields √  
 - denormalize belongs_to, has_many typed associations √    
 - generate migration from denormalized model √   
 - observe model changes and update denormalized model √  
-- ...
 
 ## License  
 see MIT-LICENSE.
