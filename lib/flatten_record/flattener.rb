@@ -3,7 +3,6 @@ module FlattenRecord
   module Flattener
     def self.included(base)
       base.extend ClassMethods
-      base.include InstanceMethods
 
       base.class_eval do
         cattr_accessor :flat_meta, :normal_model
@@ -54,13 +53,11 @@ module FlattenRecord
       end
     end # /ClassMethods
 
-    module InstanceMethods
-      def update_with(normal)
-        node = self.class.flat_meta.root_node.traverse_by(:target_model, normal.class)
-        records = node.update(normal, self)
-        records.each(&:save)
-        records
-      end
+    def update_with(normal)
+      node = self.class.flat_meta.root_node.traverse_by(:target_model, normal.class)
+      records = node.update(normal, self)
+      records.each(&:save)
+      records
     end
   end
 end
