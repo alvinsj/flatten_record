@@ -1,6 +1,6 @@
 module FlattenRecord
   module Meta
-    class AssociatedColumn < NormalizedColumn
+    class AssociatedAttr < NormalizedAttr
       def initialize(parent, association, model) 
         super(parent, association.klass, model)
         @association = association

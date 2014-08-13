@@ -1,6 +1,6 @@
 module FlattenRecord
   module Meta
-    class BelongsTo < AssociatedColumn
+    class BelongsTo < AssociatedAttr
     end
   end
 end

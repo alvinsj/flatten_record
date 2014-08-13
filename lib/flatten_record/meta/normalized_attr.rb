@@ -1,6 +1,6 @@
 module FlattenRecord
   module Meta
-    class NormalizedColumn < Node
+    class NormalizedAttr < Node
       def denormalize(instance, to_record)
         children.each do|child|
           to_record = child.denormalize(instance, to_record) 
@@ -119,6 +119,6 @@ module FlattenRecord
         end
       end
 
-    end #/NormalizedColumn
+    end #/NormalizedAttr
   end
 end

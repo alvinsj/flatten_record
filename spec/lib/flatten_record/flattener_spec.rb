@@ -66,11 +66,15 @@ describe FlattenRecord::Flattener do
 
     it 'build meta correctly' do
       meta = klass.flat_meta
-      expect(klass.flat_meta).to_not be_nil
+      expect(meta).to_not be_nil
       
-      column_names = meta.root.all_columns.map(&:name) 
+      expect(meta.root_node).to_not be_nil
+      expect(meta.root_node.all_columns).to_not be_empty
+      
+      column_names = meta.root_node.all_columns.map(&:name) 
 
       expect(column_names.count).to be_eql(10)
+
       expect(column_names).to be_include("order_id")
       expect(column_names).to be_include("total")
       expect(column_names).to be_include("customer_id")
@@ -88,6 +92,7 @@ describe FlattenRecord::Flattener do
       expect(denormalized.count).to be_eql(1)
 
       record = denormalized.first
+      
       expect(record.total).to be_eql(100)
       expect(record.grand_total).to be_eql(50)
       expect(record.total_in_usd).to be_eql(1000)

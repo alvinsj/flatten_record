@@ -1,6 +1,6 @@
 module FlattenRecord
   module Meta
-    class HasOne < AssociatedColumn
+    class HasOne < AssociatedAttr
     end
   end
 end
