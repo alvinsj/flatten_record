@@ -9,7 +9,7 @@ module FlattenRecord
       base.extend ClassMethods
 
       Config.included_models ||= []
-      Config.included_models << base
+      Config.included_models << base.to_s
 
       base.class_eval do
         cattr_accessor :flattener_meta, :normal_model

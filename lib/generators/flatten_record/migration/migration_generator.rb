@@ -11,8 +11,8 @@ module FlattenRecord
       argument :name, :description => 'path to model'
 
       def generate_files
-        unless valid? 
-          puts("Error. #{name.camelize} is not found") and return
+        if !valid? 
+          puts(red("Error. #{name.camelize} is not found")) and return
         end
 
         defined_classes.each do |class_name|
@@ -22,14 +22,14 @@ module FlattenRecord
 
           case
           when @klass.table_exists?
-            puts("Warning. Table already exists: #{@table_name}")
+            puts yellow("Warning. Table already exists: #{@table_name}")
             diff_and_generate if meta 
           
           when meta
             migration_template('migration.erb', "db/migrate/create_table_#{@table_name}.rb")
           
           else
-            puts("Error. No denormalization definition found in #{class_name}")
+            puts red("Error. No denormalization definition found in #{@table_name}")
           end
         end
       end
@@ -45,17 +45,29 @@ module FlattenRecord
       
       def diff_and_generate
         if any_diff?
-          puts "Generating migration based on the difference.."
-          puts "Add columns: #{add_columns_names}" unless add_columns.empty?
-          puts "Drop columns: #{drop_columns_names}" unless drop_columns.empty?
+          puts blue("Generating migration based on the difference..") 
+          puts ""
+          puts "      #{green('Add columns:')} #{add_columns_names}" unless add_columns.empty?
+          puts ""
+          puts "      #{red('Drop columns:')} #{drop_columns_names}" unless drop_columns.empty?
+          puts ""
 
           @migration = add_columns.empty? ? 
-            "drop_#{drop_columns.first.name}_from" : 
-            "add_#{add_columns.first.name}_to"
+            "drop_#{drop_columns.first.name}_etc_from" : 
+            "add_#{add_columns.first.name}_etc_to"
           
           migration_template('update.erb', "db/migrate/#{@migration}_#{@table_name}.rb")
         end
       end
+
+      def colorize(text, color_code)
+        "\e[#{color_code}m#{text}\e[0m"
+      end
+
+      def red(text); colorize(text, 31); end
+      def green(text); colorize(text, 32); end
+      def yellow(text); colorize(text, 33); end
+      def blue(text); colorize(text, 34); end
 
       def any_diff?
         !add_columns.empty? || !drop_columns.empty? 
@@ -99,7 +111,7 @@ module FlattenRecord
         Rails.application.eager_load!
         @klass = name.camelize
         @klasses = FlattenRecord::Config.included_models
-        @klasses.include?(@klass)
+        @klasses.include?(@klass.to_s)
       end
     end
   end
