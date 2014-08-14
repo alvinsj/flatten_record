@@ -7,7 +7,9 @@ module FlattenRecord
       end
 
       def denormalize(instance, to_record)
-        if to_record.respond_to?(@column.name)
+        first_record= to_record.is_a?(Enumerable) ? to_record.first : to_record
+
+        if first_record.respond_to?(@column.name)
           to_record = assign_value(to_record, name) do |record|
             record.send(@column.name.to_sym)
           end
