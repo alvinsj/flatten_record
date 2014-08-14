@@ -18,7 +18,6 @@ module FlattenRecord
         end
         to_record
       end 
-      alias_method :update, :denormalize
       
       private
       def new_column(col_name, col_default, col_type, not_null)

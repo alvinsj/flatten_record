@@ -13,6 +13,8 @@ module FlattenRecord
       end
 
       def denormalize(instance, to_record)
+        return nullify(to_records) if instance.blank?
+
         if instance.respond_to?(@column.name)
           to_record = assign_value(to_record, name) do |record|
             instance.send(@column.name.to_sym)
@@ -22,7 +24,6 @@ module FlattenRecord
         end
         to_record
       end
-      alias_method :update, :denormalize
 
       def nullify(to_record)
         assign_value(to_record, name) do |record|
@@ -33,7 +34,7 @@ module FlattenRecord
       protected 
       def assign_value(to_record, name, &block)
         if to_record.respond_to?(:each)
-          to_record = to_record.map do |record|
+          to_record = to_record.collect do |record|
             value = yield(record)
             record.send("#{name}=", value)
             record

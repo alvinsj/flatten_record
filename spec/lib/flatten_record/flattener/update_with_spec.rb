@@ -110,7 +110,6 @@ describe FlattenRecord::Flattener do
         
         record = changed.first
         
-        expect(record.id).to eq(denormalized.first.id)
         expect(record.total).to eq(2000)
       end
 
@@ -122,18 +121,43 @@ describe FlattenRecord::Flattener do
   
         record = denormalized.first
         expect(record.customer_child_cat_name).to eq("Meow")
-
+        
+        # change child attribute
         cat = order.customer.children.first.cats.first
         cat.name = "Phew"
         cat.save
 
-        changed = klass.update_with(cat) 
+        changed = klass.update_with(order) 
         expect(klass.count).to eq(1)
         
         record = changed.first
-        expect(record.id).to eq(denormalized.first.id)
         expect(record.customer_child_cat_name).to eq("Phew")
       end
+
+      it 'should be able to update related records' do 
+        order = order_with_customer_with_two_children
+
+        denormalized = klass.create_with(order) 
+        expect(klass.count).to eq(2)
+  
+        record = denormalized.first
+        expect(record.customer_child_cat_name).to eq("Meow")
+        
+        # change child attribute
+        cat = order.customer.children.first.cats.first
+        cat.name = "Phew"
+        cat.save
+
+        order.customer.children.create(name: "Starlord")
+        
+        changed = klass.update_with(order.reload) 
+        expect(klass.count).to eq(3)
+        
+        record = changed.first
+        expect(record.customer_child_cat_name).to eq("Phew")
+      end
+
+
     end #/.update_with
   end
 end

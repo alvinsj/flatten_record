@@ -5,14 +5,7 @@ module FlattenRecord
       def denormalize(instance, to_record)
         denormalize_children(instance, to_record)
       end
-
-      def update(instance, to_records)
-        children.each do|child|
-          to_records = child.update(instance, to_records)
-        end
-        to_records
-      end
- 
+      
       def all_columns
         return @columns if @columns
         child_columns = @include.values.map do |c|

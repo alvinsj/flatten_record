@@ -28,24 +28,8 @@ module FlattenRecord
       end
 
       def update_with(normal)
-       
-        if normal.class.eql?(normal_model)
-          records = find_with(normal)
-          flattener_meta.update(normal, records)
-        
-        else 
-          node = find_node(:target_model, normal.class)
-          id_column = node.id_column
-          
-          records = find_with(normal)
-          ids = records.map(&(id_column.name.to_sym))
-          
-          normals = normal_model.where(id_column.column.name => ids)
-          
-          normals.collect do |n|
-            flattener_meta.update(n, records)
-          end
-        end.flatten
+        destroy_with(normal)
+        return create_with(normal)
       end
 
       def destroy_with(normal)
@@ -64,7 +48,7 @@ module FlattenRecord
         id_name = node.id_column.name 
         normal_id_name = node.id_column.column.name
 
-        DenormalizedSet.init(self.where(id_name, normal.send(normal_id_name)))
+        self.where(id_name, normal.send(normal_id_name))
       end
 
       def find_node(type, value)

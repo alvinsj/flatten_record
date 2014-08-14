@@ -18,7 +18,6 @@ module FlattenRecord
     autoload_nodes
   end
   
-  autoload :DenormalizedSet, 'flatten_record/denormalized_set'
   autoload :Flattener, 'flatten_record/flattener'
   autoload :Definition, 'flatten_record/definition'
 end

@@ -1,7 +1,7 @@
 module FlattenRecord
   module Meta
     class Node
-      attr_reader :parent, :children, :target_model, :model
+      attr_reader :parent, :children, :target_model, :model, :denormalized, :pending
 
       def initialize(parent, target_model, model)
         @parent = parent
