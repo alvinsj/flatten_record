@@ -12,6 +12,10 @@ module FlattenRecord
         parent.prefix + @column.name.to_s
       end
 
+      def type
+        @column.type
+      end
+
       def denormalize(instance, to_record)
         return nullify(to_records) if instance.blank?
 

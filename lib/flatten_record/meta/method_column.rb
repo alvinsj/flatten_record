@@ -1,8 +1,8 @@
 module FlattenRecord
   module Meta
     class MethodColumn < Column
-      def initialize(parent, method, target_model, model)
-        @column = new_column(method, false, :integer, false)  
+      def initialize(parent, method, type, target_model, model, options={})
+        @column = new_column(method, options[:default], type, options[:not_null])  
         super(parent, @column, target_model, model) 
       end
 

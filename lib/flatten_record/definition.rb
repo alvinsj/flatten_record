@@ -1,15 +1,16 @@
 module FlattenRecord
-  class Definition 
+  class Definition
     def initialize(definition)
       @definition = definition
       @errors = []
-      @methods = []
-      @compute = []
+      @methods = {}
+      @compute = {}
       @include = {}
       @except = []
       @only = []
+      @class_name = nil
     end
-    
+       
     def [](key)
       instance_variable_get "@#{key}"
     end
@@ -58,10 +59,10 @@ module FlattenRecord
     end
    
     def validate_methods(methods)
-      methods.each do |method| 
+      methods.each do |method, type| 
         error = "undefined method '#{method}' in #{@target_model.name}"
-        @errors << error unless target_method?(method)
-        @methods << method
+        @errors << error unless target_method?(method)        
+        @methods[method] = type
       end      
     end
 
@@ -76,6 +77,12 @@ module FlattenRecord
 
     def validate_compute(model_methods)
       @compute = model_methods
+    end
+
+    def validate_class_name(name)
+      error = "undefined class with '#{name}'"
+      @errors << error if !Object.const_defined?(name.to_sym)
+      @class_name = name
     end
 
     private

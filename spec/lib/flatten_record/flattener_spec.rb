@@ -36,13 +36,20 @@ describe FlattenRecord::Flattener do
               include: { 
                 children: {
                   only: [:name],
-                  include: { cats: {only: [:name]} }
+                  include: { 
+                    cats: {
+                      only: [:name],
+                      include: { 
+                        owner: { class_name: 'Child', only: [:name] } 
+                      }
+                    } 
+                  }
                 }
               }
             }
           },
         }
-        def total_in_usd
+        def compute_total_in_usd(item)
           1000
         end
       end
@@ -73,7 +80,7 @@ describe FlattenRecord::Flattener do
       expect(meta.all_columns).to_not be_empty
       column_names = meta.all_columns.map(&:name) 
 
-      expect(column_names.count).to eq(10)
+      expect(column_names.count).to eq(12)
 
       expect(column_names).to be_include("order_id")
       expect(column_names).to be_include("total")
@@ -85,6 +92,8 @@ describe FlattenRecord::Flattener do
       expect(column_names).to be_include("customer_child_name")
       expect(column_names).to be_include("customer_child_cat_id")
       expect(column_names).to be_include("customer_child_cat_name")
+      expect(column_names).to be_include("customer_child_cat_child_id")
+      expect(column_names).to be_include("customer_child_cat_child_name")
     end
 
     context '.create_with' do

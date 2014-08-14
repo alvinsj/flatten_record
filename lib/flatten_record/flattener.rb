@@ -1,8 +1,15 @@
 module FlattenRecord
+  
+  class Config
+    cattr_accessor :included_models
+  end
 
   module Flattener
     def self.included(base)
       base.extend ClassMethods
+
+      Config.included_models ||= []
+      Config.included_models << base
 
       base.class_eval do
         cattr_accessor :flattener_meta, :normal_model

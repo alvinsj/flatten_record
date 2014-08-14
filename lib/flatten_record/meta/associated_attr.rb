@@ -1,8 +1,8 @@
 module FlattenRecord
   module Meta
     class AssociatedAttr < NormalizedAttr
-      def initialize(parent, association, model)
-        super(parent, association.klass, model)
+      def initialize(parent, association, association_klass, model)
+        super(parent, association_klass, model)
         @association = association
       end
 

@@ -23,13 +23,20 @@ describe FlattenRecord::Flattener do
               include: { 
                 children: {
                   only: [:name],
-                  include: { cats: {only: [:name]} }
+                  include: { 
+                    cats: {
+                      only: [:name],
+                      include: { 
+                        owner: { class_name: 'Child', only: [:name] } 
+                      }
+                    } 
+                  }
                 }
               }
             }
           },
         }
-        def total_in_usd
+        def compute_total_in_usd(item)
           1000
         end
       end

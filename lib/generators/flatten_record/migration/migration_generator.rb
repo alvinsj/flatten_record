@@ -18,14 +18,14 @@ module FlattenRecord
         defined_classes.each do |class_name|
           @klass = class_name.constantize
           @table_name = @klass.table_name
-          @table_columns = denormalized_columns if @klass.denormalizer_meta
+          @table_columns = denormalized_columns if meta
 
           case
           when @klass.table_exists?
             puts("Warning. Table already exists: #{@table_name}")
-            diff_and_generate if @klass.denormalizer_meta 
+            diff_and_generate if meta 
           
-          when @klass.denormalizer_meta
+          when meta
             migration_template('migration.erb', "db/migrate/create_table_#{@table_name}.rb")
           
           else
@@ -35,6 +35,10 @@ module FlattenRecord
       end
 
       private
+      def meta
+        @klass.flattener_meta
+      end
+
       def denormalized_columns
         @klass.denormalizer_meta.denormalized_columns
       end
@@ -83,7 +87,7 @@ module FlattenRecord
       end
 
       def denormalized_columns
-        @klass.denormalizer_meta.denormalized_columns
+        meta.all_columns
       end
 
       def defined_classes
@@ -94,7 +98,7 @@ module FlattenRecord
       def valid?
         Rails.application.eager_load!
         @klass = name.camelize
-        @klasses = FlattenRecord::Denormalize::Meta.included_classes
+        @klasses = FlattenRecord::Config.included_models
         @klasses.include?(@klass)
       end
     end

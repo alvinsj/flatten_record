@@ -83,18 +83,30 @@ module FlattenRecord
 
 
       def build_compute(definition)
-        return [] unless definition[:methods] 
+        return [] unless definition[:compute] 
         
-        definition[:compute].map do |method| 
-          ComputeColumn.new(self, method, target_model, model)
+        definition[:compute].map do |method, type| 
+          options = {}
+          if type.is_a?(Hash)
+            options = type
+            type = options[:sql_type]
+          end
+
+          ComputeColumn.new(self, method, type, target_model, model, options)
         end
       end
 
       def build_methods(definition)
         return [] unless definition[:methods] 
         
-        definition[:methods].map do |method| 
-          MethodColumn.new(self, method, target_model, model)
+        definition[:methods].map do |method, type|
+          options = {}
+          if type.is_a?(Hash)
+            options = type
+            type = options[:sql_type]
+          end
+
+          MethodColumn.new(self, method, type, target_model, model)
         end
       end
 
@@ -102,22 +114,23 @@ module FlattenRecord
         return {} unless definition[:include]
         children = Hash.new
         definition[:include].each do |child, child_definition|
-          children[child] = node_factory(self, child)
+          children[child] = node_factory(self, child, child_definition[:definition][:class_name])
           children[child].build(child_definition)
         end
         children
       end
 
       private
-      def node_factory(parent, child)
+      def node_factory(parent, child, class_name)
         klass_map = [:has_many, :belongs_to, :has_one]
 
         association = target_model.reflect_on_association(child)
+        class_name ||= association.klass
         node = nil
         
         if klass_map.include?(association.macro)
           klass = association.macro.to_s.camelize.to_sym
-          node = Meta.const_get(klass).new(parent, association, model)
+          node = Meta.const_get(klass).new(parent, association, class_name, model)
         elsif associaton.macro.nil?
           raise "association with '#{child}' on #{target_model.name.underscore} is not found"
         else
