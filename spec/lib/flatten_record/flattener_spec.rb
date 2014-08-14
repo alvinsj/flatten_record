@@ -92,8 +92,8 @@ describe FlattenRecord::Flattener do
       expect(column_names).to be_include("customer_child_name")
       expect(column_names).to be_include("customer_child_cat_id")
       expect(column_names).to be_include("customer_child_cat_name")
-      expect(column_names).to be_include("customer_child_cat_child_id")
-      expect(column_names).to be_include("customer_child_cat_child_name")
+      expect(column_names).to be_include("customer_child_cat_owner_child_id")
+      expect(column_names).to be_include("customer_child_cat_owner_child_name")
     end
 
     context '.create_with' do

@@ -11,9 +11,9 @@ module FlattenRecord
         target_name = target_model.name.underscore
         is_parent_root? ?
           target_name + "_" + column_name : 
-          column_name
+          column_prefix(column_name)
       end
-      
+     
     end
   end
 end

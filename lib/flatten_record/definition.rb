@@ -1,6 +1,6 @@
 module FlattenRecord
   class Definition
-    def initialize(definition)
+    def initialize(definition, key=nil)
       @definition = definition
       @errors = []
       @methods = {}
@@ -9,6 +9,8 @@ module FlattenRecord
       @except = []
       @only = []
       @class_name = nil
+      @prefix = nil
+      @_key = key
     end
        
     def [](key)
@@ -71,7 +73,7 @@ module FlattenRecord
         error = "unknown association '#{child}' in '#{@target_model.name.to_s}'"
         assoc = @target_model.reflect_on_association(child)
         @errors << error if assoc.blank?
-        @include.merge!({ child => Definition.new(child_definition) })
+        @include[child] = Definition.new(child_definition, child)
       end
     end
 
@@ -83,6 +85,10 @@ module FlattenRecord
       error = "undefined class with '#{name}'"
       @errors << error if !Object.const_defined?(name.to_sym)
       @class_name = name
+    end
+
+    def validate_prefix(name)
+      @prefix = name
     end
 
     private

@@ -36,7 +36,7 @@ module FlattenRecord
 
       def update_with(normal)
         destroy_with(normal)
-        return create_with(normal)
+        create_with(normal)
       end
 
       def destroy_with(normal)

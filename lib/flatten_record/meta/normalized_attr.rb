@@ -12,7 +12,7 @@ module FlattenRecord
           c[:columns] + c[:methods] + c[:compute]
         end
         child_columns.flatten!
-        @base_columns + @methods + @compute + child_columns 
+        @columns = @base_columns + @methods + @compute + child_columns 
       end
 
       def [](key)
@@ -20,7 +20,7 @@ module FlattenRecord
       end
       
       def prefix
-        parent.prefix+target_model.name.underscore.to_s + "_"
+        @custom_prefix || parent.prefix+target_model.name.underscore.to_s + "_"
       end
 
       def traverse_by(attr, value)
@@ -43,8 +43,6 @@ module FlattenRecord
 
       def id_column
         return @id_column unless @id_column.nil?
-        primary_key = target_columns.select(&:primary).first
-        @id_column = IdColumn.new(self, primary_key, target_model, model)
       end
 
       protected
@@ -56,12 +54,21 @@ module FlattenRecord
       end
 
       def build(definition)
-        super(definition)
+        definition = super(definition)
+
+        primary_key = target_columns.select(&:primary).first
+        @id_column = IdColumn.new(self, primary_key, target_model, model)
+
+        @excluded_columns = []
         @compute = build_compute(definition) || []
         @methods = build_methods(definition) || []
         @include = build_children(definition) || {}
         @base_columns = build_columns(definition) || []
-        @columns = all_columns || []
+        
+        dups = find_dup_columns
+        if !dups.blank?
+          raise "#{@excluded_columns.inspect}Duplicate columns found: #{dups.join(", ")}"
+        end
       end
       
       def children
@@ -70,17 +77,8 @@ module FlattenRecord
 
       def build_columns(definition)
         cols = columns_from_definition(definition)
-        cols = remove_foreign_key_columns(cols)
-        
         [id_column] + cols 
       end 
-     
-      def remove_foreign_key_columns(cols)
-        foreign_keys = @include.values.map(&:foreign_key).
-                                select{|col| col.foreign_key.present? }
-        cols.reject{|col| foreign_keys.include?(col.name) }
-      end
-
 
       def build_compute(definition)
         return [] unless definition[:compute] 
@@ -121,10 +119,26 @@ module FlattenRecord
       end
 
       private
+      def find_dup_columns
+        dups = []
+        all_columns.each do |column|
+          all_columns.each do |comp|
+            if comp.parent != column.parent && comp.name == column.name
+              parent_target = column.parent.target_model.to_s
+              original_name = column.column.name
+              dups << "#{column.name} was from #{parent_target}'s #{original_name}"
+            end
+          end
+        end
+        dups
+      end
+
       def node_factory(parent, child, class_name)
         klass_map = [:has_many, :belongs_to, :has_one]
 
         association = target_model.reflect_on_association(child)
+        @excluded_columns << association.foreign_key.to_s
+        
         class_name ||= association.klass
         node = nil
         
@@ -147,6 +161,8 @@ module FlattenRecord
 
       def allow_column?(col, definition)
         return false if col.primary
+        return false if @excluded_columns.include?(col.name.to_s) 
+
         if definition[:only].present?
           definition[:only].include?(col.name.to_sym) 
         elsif definition[:except].present?

@@ -9,7 +9,23 @@ module FlattenRecord
       end
       
       def name
-        parent.prefix + @column.name.to_s
+        default_name = parent.prefix + @column.name.to_s   
+        is_parent_root? ? default_name : column_prefix(default_name)
+      end
+
+      def column_prefix(default_name)
+        col_prefix = parent._key.to_s
+          
+        if target_model.table_name.to_s == col_prefix ||
+          target_model_name == col_prefix
+          return default_name
+        end
+
+        default_prefix = @custom_prefix || parent.parent.prefix
+        parent_key = parent._key.to_s + "_"
+        model_prefix = target_model_name + "_"
+        
+        default_prefix + parent_key + model_prefix +  @column.name.to_s
       end
 
       def type
@@ -48,7 +64,7 @@ module FlattenRecord
         end
         to_record
       end
-      
+     
     end # /Column
   end # /Meta
 end

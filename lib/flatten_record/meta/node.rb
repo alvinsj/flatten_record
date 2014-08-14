@@ -26,13 +26,23 @@ module FlattenRecord
  
       def prefix
         return @custom_prefix unless @custom_prefix.nil?
-        is_parent_root? ? "" : "#{target_model_name}_" 
+        return "" if is_parent_root?
+        
+        "#{target_model_name}_" 
       end
     
       protected
       def build(definition)
+        @custom_prefix = definition[:definition][:prefix]
         definition.validates_with(target_model, model)
+        @_key = definition[:_key]
+        
         raise definition.error_message unless definition.valid?     
+        definition
+      end
+
+      def _key
+        @_key
       end
        
       # target helpers

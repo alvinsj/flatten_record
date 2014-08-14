@@ -33,8 +33,8 @@ class FlattenRecord::Flattener::Test
         t.string :customer_child_name
         t.integer :customer_child_cat_id
         t.string :customer_child_cat_name
-        t.integer :customer_child_cat_child_id
-        t.integer :customer_child_cat_child_name
+        t.integer :customer_child_cat_owner_child_id
+        t.integer :customer_child_cat_owner_child_name
       end
     end
     ActiveRecord::Base.connection.schema_cache.clear!
