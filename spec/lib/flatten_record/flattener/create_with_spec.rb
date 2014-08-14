@@ -37,7 +37,7 @@ describe FlattenRecord::Flattener do
       Denormalized 
     end
 
-    let(:order_with_one_child) do
+    let(:order_with_customer_with_one_child) do
       child = Child.new(name: 'Ethan')
       child.cats << Cat.new(name: 'Meow')
 
@@ -76,6 +76,8 @@ describe FlattenRecord::Flattener do
       child1.cats << Cat.new(name: 'Phew')
 
       child2 = Child.new(name: 'Yan')
+      child2.cats << Cat.new(name: "Octocat")
+      child2.cats << Cat.new(name: "Tender")
       
       customer = Customer.create(name: 'Alvin') 
       customer.children << child1
@@ -89,10 +91,9 @@ describe FlattenRecord::Flattener do
       order
     end
 
-
     context '.create_with' do
       it 'should be able to create denormalized record' do
-        denormalized = klass.create_with(order_with_one_child) 
+        denormalized = klass.create_with(order_with_customer_with_one_child) 
         expect(denormalized.count).to eq(1)
   
         record = denormalized.first
@@ -121,7 +122,7 @@ describe FlattenRecord::Flattener do
 
       it 'should be able to create multiple denormalized records (nested :has_many)' do
         denormalized = klass.create_with(order_with_customer_with_two_children_nested) 
-        expect(denormalized.count).to eq(3)
+        expect(denormalized.count).to eq(4)
         record = denormalized[0]
         
         expect(record.customer_child_name).to eq("Ethan")
@@ -135,11 +136,15 @@ describe FlattenRecord::Flattener do
         record = denormalized[2]
         
         expect(record.customer_child_name).to eq("Yan")
-        expect(record.customer_child_cat_name).to be_nil
+        expect(record.customer_child_cat_name).to eq("Octocat")
+ 
+        record = denormalized[3]
+        
+        expect(record.customer_child_name).to eq("Yan")
+        expect(record.customer_child_cat_name).to eq("Tender")
+ 
       end
 
-
     end #/.create_with
-
   end
 end
