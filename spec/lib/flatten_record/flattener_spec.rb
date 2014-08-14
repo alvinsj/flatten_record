@@ -50,7 +50,7 @@ describe FlattenRecord::Flattener do
       Denormalized 
     end
 
-    let(:order_with_one_child) do
+    let(:order_with_customer_with_one_child) do
       child = Child.new(name: 'Ethan')
       child.cats << Cat.new(name: 'Meow')
 
@@ -67,13 +67,11 @@ describe FlattenRecord::Flattener do
 
 
     it 'should build meta correctly' do
-      meta = klass.flat_meta
-      expect(meta).to_not be_nil
+      meta = klass.flattener_meta
+      expect(meta).to_not be_nil 
       
-      expect(meta.root_node).to_not be_nil
-      expect(meta.root_node.all_columns).to_not be_empty
-      
-      column_names = meta.root_node.all_columns.map(&:name) 
+      expect(meta.all_columns).to_not be_empty
+      column_names = meta.all_columns.map(&:name) 
 
       expect(column_names.count).to eq(10)
 
@@ -91,7 +89,7 @@ describe FlattenRecord::Flattener do
 
     context '.create_with' do
       it 'should be able to create denormalized record' do
-        denormalized = klass.create_with(order_with_one_child) 
+        denormalized = klass.create_with(order_with_customer_with_one_child) 
         expect(denormalized.count).to eq(1)
   
         record = denormalized.first
@@ -107,8 +105,8 @@ describe FlattenRecord::Flattener do
 
     context '.find_with' do
       it 'should be able to find related records' do 
-        denormalized = klass.create_with(order_with_one_child) 
-        records = klass.find_with(order_with_one_child.customer)
+        denormalized = klass.create_with(order_with_customer_with_one_child) 
+        records = klass.find_with(order_with_customer_with_one_child.customer)
         expect(records.count).to eq(1)
   
         record = records.first
@@ -123,62 +121,13 @@ describe FlattenRecord::Flattener do
       end
     end #/.find_with
 
-    context '.update_with' do
-      it 'should be able to update related records' do 
-        order = order_with_one_child
-        order.total = 1000
-        order.save
 
-        denormalized = klass.create_with(order) 
-        expect(klass.count).to eq(1)
-  
-        record = denormalized.first
-        expect(record.total).to eq(1000)
-
-        # change attribute
-        order.total = 2000
-        order.save
-
-        changed = klass.update_with(order) 
-        expect(klass.count).to eq(1)
-        
-        record = changed.first
-        
-        expect(record.id).to eq(denormalized.first.id)
-        expect(record.total).to eq(2000)
-      end
-
-      it 'should be able to update related records' do 
-        order = order_with_one_child
-
-        denormalized = klass.create_with(order) 
-        expect(klass.count).to eq(1)
-  
-        record = denormalized.first
-        expect(record.customer_child_cat_name).to eq("Meow")
-
-        cat = order.customer.children.first.cats.first
-        cat.name = "Phew"
-        cat.save
-
-        changed = klass.update_with(cat) 
-        puts klass.all.inspect
-        expect(klass.count).to eq(1)
-        
-        record = changed.first
-        
-        expect(record.id).to eq(denormalized.first.id)
-        expect(record.customer_child_cat_name).to eq("Phew")
-      end
- 
-    end #/.update_with
- 
     context '.destroy_with' do
       it 'should be able to destroy related records' do 
-        denormalized = klass.create_with(order_with_one_child) 
+        denormalized = klass.create_with(order_with_customer_with_one_child) 
         expect(klass.count).to eq(1)
   
-        klass.destroy_with(order_with_one_child)
+        klass.destroy_with(order_with_customer_with_one_child)
         expect(klass.count).to eq(0)
       end
     end #/.find_with

@@ -5,7 +5,7 @@ module FlattenRecord
       base.extend ClassMethods
 
       base.class_eval do
-        cattr_accessor :flat_meta, :normal_model
+        cattr_accessor :flattener_meta, :normal_model
       end
     end
 
@@ -16,48 +16,62 @@ module FlattenRecord
         root_node = Meta::RootNode.new(normal_model, self)
         root_node.build(definition)
 
-        self.flat_meta = Struct.new(:root_node).new(root_node)
-        self.normal_model = flat_meta.root_node.target_model
+        self.flattener_meta = root_node
+        self.normal_model = root_node.target_model
       end
 
       def create_with(normal)
         raise "unmatch model type #{normal.class.inspect}" unless normal_model.eql?(normal.class)
-        records = flat_meta.root_node.denormalize(normal, self.new)
+        records = flattener_meta.denormalize(normal, self.new)
         records.each(&:save)
         records
       end
 
       def update_with(normal)
-        records = find_with(normal)
-        records.find_each{|record| record.update_with(normal)}
-        records
+       
+        if normal.class.eql?(normal_model)
+          records = find_with(normal)
+          flattener_meta.update(normal, records)
+        
+        else 
+          node = find_node(:target_model, normal.class)
+          id_column = node.id_column
+          
+          records = find_with(normal)
+          ids = records.map(&(id_column.name.to_sym))
+          
+          normals = normal_model.where(id_column.column.name => ids)
+          
+          normals.collect do |n|
+            flattener_meta.update(n, records)
+          end
+        end.flatten
       end
 
       def destroy_with(normal)
         records = find_with(normal)
         if normal_model.eql?(normal.class)
-          records.find_each{|r| r.destroy }
+          records.each{|r| r.destroy }
         else
-          records.find_each{|r| r.update_with(normal) }
+          self.update(normal, records) 
         end
         records
       end
 
       def find_with(normal)
-        node = flat_meta.root_node.traverse_by(:target_model, normal.class)
+        node = find_node(:target_model, normal.class)
 
         id_name = node.id_column.name 
         normal_id_name = node.id_column.column.name
 
-        self.where(id_name, normal.send(normal_id_name))
+        DenormalizedSet.init(self.where(id_name, normal.send(normal_id_name)))
+      end
+
+      def find_node(type, value)
+        flattener_meta.traverse_by(type, value)
       end
     end # /ClassMethods
 
-    def update_with(normal)
-      node = self.class.flat_meta.root_node.traverse_by(:target_model, normal.class)
-      records = node.update(normal, self)
-      records.each(&:save)
-      records
-    end
   end
 end
+

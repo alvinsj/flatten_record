@@ -1,13 +1,17 @@
 module FlattenRecord
   module Meta
     class NormalizedAttr < Node
+      
       def denormalize(instance, to_record)
-        children.each do|child|
-          to_record = child.denormalize(instance, to_record) 
-        end
-        to_record
+        denormalize_children(instance, to_record)
       end
-      alias_method :update, :denormalize
+
+      def update(instance, to_records)
+        children.each do|child|
+          to_records = child.update(instance, to_records)
+        end
+        to_records
+      end
  
       def all_columns
         return @columns if @columns
@@ -51,6 +55,13 @@ module FlattenRecord
       end
 
       protected
+      def denormalize_children(instance, to_record)
+        children.each do |child|
+          to_record = child.denormalize(instance, to_record)
+        end
+        to_record
+      end
+
       def build(definition)
         super(definition)
         @compute = build_compute(definition) || []

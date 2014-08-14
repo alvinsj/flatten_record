@@ -17,8 +17,9 @@ module FlattenRecord
           raise "#{@column.name} is not found in #{to_record.inspect}"
         end
         to_record
-      end
-     
+      end 
+      alias_method :update, :denormalize
+      
       private
       def new_column(col_name, col_default, col_type, not_null)
         ActiveRecord::ConnectionAdapters::Column.new(col_name, col_default, col_type, not_null)

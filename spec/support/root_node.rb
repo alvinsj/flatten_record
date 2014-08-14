@@ -29,11 +29,10 @@ class FlattenRecord::Meta::RootNode::Test
         t.integer :grand_total
         t.integer :total_in_usd
         t.string :customer_name
-        t.string :customer_child_id
+        t.integer :customer_child_id
         t.string :customer_child_name
-        t.string :customer_child_cat_id
+        t.integer :customer_child_cat_id
         t.string :customer_child_cat_name
-        t.integer
       end
     end
     ActiveRecord::Base.connection.schema_cache.clear!
