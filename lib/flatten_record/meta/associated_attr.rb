@@ -42,14 +42,22 @@ module FlattenRecord
         new_records = []
         index = 0
         records.find_each do |record|
-          new_records << (
+          new_records.push (
             index == 0 ?
               denormalize_children(record, to_record) :
-              denormalize_children(record, to_record.dup) 
+              denormalize_children(record, duplicate(to_record)) 
           )
           index += 1
         end
         new_records
+      end
+
+      def duplicate(to_record)
+        if to_record.respond_to?(:each)
+          to_record.map{|r| duplicate(r)}
+        else
+          to_record.dup
+        end
       end
 
     end
