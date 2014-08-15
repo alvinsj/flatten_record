@@ -76,7 +76,7 @@ module FlattenRecord
         id_name = node.id_column.name 
         normal_id_name = node.id_column.column.name
 
-        self.where(id_name, normal.send(normal_id_name))
+        self.where(id_name => normal.send(normal_id_name))
       end
 
       def find_node(type, value)
