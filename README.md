@@ -2,23 +2,19 @@
 
 An ActiveRecord plugin that denormalizes your existing ActiveRecord models. 
 
-It includes generation of migration, observing the save/destory on target model and changes the records accordingly. It provides an easier way to create denormalized models to be used in reporting.
+It provides an easier way to create denormalized records to be used for reporting, includes generation of migration file. 
 
 ## Usage
 
-### Add gem dependency
+Add gem dependency
+
     gem 'flatten_record'
 
-### Include module
+Include module in your newly defined model
+
 	include FlattenRecord::Flattener
 	
 ### Define denormalization
-	class Order < ActiveRecord::Base
-		def total_in_usd
-			# calculation
-		end
-	end
-	
     class DenormalizedOrder < ActiveRecord::Base
     	include FlattenRecord::Flattener
 
@@ -30,7 +26,7 @@ It includes generation of migration, observing the save/destory on target model 
       			# :has_many association, create multiple denormalized records  
       			line_items: {}
   			},
-  			method: {
+  			methods: {
           		# save methods defined in Normalized model
           		total_in_usd: :decimal 
           	},
@@ -41,54 +37,47 @@ It includes generation of migration, observing the save/destory on target model 
     	}
 
     	private
-    	def compute_line_item_sum(order)
+    	def compute_line_items_sum(order)
       		order.line_items.collect(&:total).inject(:+)
     	end
   	end
   	
+  	class Order < ActiveRecord::Base
+		def total_in_usd
+			# calculation
+		end
+	end
+  	
 ### Generate migration file
+Generate migration file based on the definition
+
     $ rails generate flatten_record:migration denormalized_order
-	  create  db/migrate/20140313034700_create_table_denormalized_orders.rb	
-    
-### Update changes and generate new migration file
+	  create  db/migrate/20140313034700_create_table_denormalized_orders.rb	    
+Update definition and generate new migration file
+
     $ rails generate flatten_record:migration denormalized_order
     Warning. Table already exists: denormalized_orders
 	Generating migration based on the difference..
 	Add columns: d_line_items_description
-      create  db/migrate/20140313034736_add_d_line_items_description_to_denormalized_orders.rb
-      
+      create  db/migrate/20140313034736_add_d_line_items_description_to_denormalized_orders.rb      
 
-### Denormalization methods
-#### Create record(s)
+### Use denormalizer methods
+Create record
+
 	irb(main)> DenormalizedOrder.create_with(order)
 
-#### Deleting record(s)
+Deleting record(s)
+
 	irb(main)> DenormalizedOrder.destroy_with(order)
 
-#### Update record(s)
+Update record(s)
+
 	irb(main)> DenormalizedOrder.update_with(order)
 
-## Other Modules
-### Model Observer  
-Observe changes in the normalized model and create denormalized records. 
+## Design & Documentation  
 
-The implementaion uses `after_commit` method in `ActiveRecord::Observer`.  
-(_Note: normalized model and all its children will be observed._)
-
-Add gem dependency
- 
-	gem 'rails-observers'
-	
-Include module in denormalized model, then observers will be included.
-	
-	include FlattenRecord::Observer
-	
-Eager loading is required to load _ActiveRecord::Observer_ on app initialization.  
-	
-	# under initializers/<denormalize>.rb or lib/<engine>/engine.rb 
-	config.after_initialize do
-      require_dependency root.join('app/models/denormalized_order').to_s
-    end
+Refer to the [wiki](https://github.com/alvinsj/flatten_record/wiki).
+    
     
 ## Versions
 
@@ -101,6 +90,7 @@ Eager loading is required to load _ActiveRecord::Observer_ on app initialization
 (Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
 - change to old :save option to :compute option √  
 (Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
+- deprecate observer √  
 
 #####v0   
 - denormalize fields and nested fields √  
