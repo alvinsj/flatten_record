@@ -30,7 +30,7 @@ module FlattenRecord
       def create_with(normal)
         if normal_model.eql?(normal.class)
           destroy_with(normal)
-          records = flattener_meta.denormalize(normal, self.new)
+          records = flattener_meta.denormalize(normal.reload, self.new)
           records.each(&:save)
           records
         else
