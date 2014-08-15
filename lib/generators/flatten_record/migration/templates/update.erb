@@ -1,4 +1,4 @@
-class <%=@migration.camelize %><%=@class_name %> < ActiveRecord::Migration
+class <%=@migration.camelize %><%=@table_name.camelize %> < ActiveRecord::Migration
   def self.up
     <% @add_columns.each do |col| %>
       add_column :<%=@table_name %>, :<%=col.name %>, :<%=col.type %>

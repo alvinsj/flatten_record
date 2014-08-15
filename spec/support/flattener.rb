@@ -1,4 +1,4 @@
-class FlattenRecord::DenormalizerMeta::Test
+class FlattenRecord::Flattener::Test
   
   def self.setup_models
     ActiveRecord::Schema.define do
@@ -14,12 +14,27 @@ class FlattenRecord::DenormalizerMeta::Test
       end
       create_table :children do |t|
         t.string :name
-        t.integer :customer_id
+        t.integer :parent_id
       end
       create_table :cats do |t|
         t.string :name
         t.string :owner_type
         t.integer :owner_id
+      end
+
+      create_table :denormalizeds do |t|
+        t.integer :total        
+        t.integer :customer_id
+        t.integer :order_id
+        t.integer :grand_total
+        t.integer :total_in_usd
+        t.string :customer_name
+        t.integer :customer_child_id
+        t.string :customer_child_name
+        t.integer :customer_child_cat_id
+        t.string :customer_child_cat_name
+        t.integer :customer_child_cat_owner_child_id
+        t.integer :customer_child_cat_owner_child_name
       end
     end
     ActiveRecord::Base.connection.schema_cache.clear!
@@ -35,12 +50,12 @@ class FlattenRecord::DenormalizerMeta::Test
     end
     
     Child.class_eval do
-      belongs_to :parent, class_name: :customer
-      has_many :cats
+      belongs_to :parent, class_name: "Customer"
+      has_many :cats, as: :owner
     end
     
     Customer.class_eval do
-      has_many :children, class_name: :child
+      has_many :children, class_name: "Child", foreign_key: "parent_id"
       has_many :cats
     end
     
@@ -49,7 +64,7 @@ class FlattenRecord::DenormalizerMeta::Test
     end
     
     Denormalized.class_eval do
-      include FlattenRecord::Denormalize
+      include FlattenRecord::Flattener
     end
     
     [Cat, Child, Customer, Order, Denormalized].each do |klass|

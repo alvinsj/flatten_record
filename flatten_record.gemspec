@@ -8,21 +8,18 @@ Gem::Specification.new do |s|
   s.name        = "flatten_record"
   s.version     = FlattenRecord::VERSION
   s.authors     = ["Alvin S.J. Ng"]
-  s.email       = ["email.to.alvin@gmail.com"]
+  s.email       = "email.to.alvin@gmail.com"
   s.homepage    = "https://github.com/alvinsj/flatten_record"
   s.summary     = "An ActiveRecord plugin that denormalizes your existing ActiveRecord models"
-  s.description = "An ActiveRecord plugin that denormalizes your existing ActiveRecord models. It includes generation of migration, observe updates on target model and changes the records accordingly. It's mainly built for performing faster queries on reporting."
+  s.description = "It provides an easier way to create denormalized records to be used for reporting, includes generation of migration file."
 
   s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.md"]
-  s.test_files = Dir["sped/**/*"]
+  s.test_files = Dir["spec/**/*"]
   
-  s.add_dependency 'rails'
+  s.add_dependency 'rails', ">= 3.2.12", "< 5"
 
-  s.add_development_dependency "bundler"
-  s.add_development_dependency "rspec-rails"
-  s.add_development_dependency "sqlite3"
-  s.add_development_dependency 'rails-observers'
-  s.add_development_dependency 'test_after_commit'
+  s.add_development_dependency "rspec-rails", "~> 2.14"
+  s.add_development_dependency "sqlite3", "~> 1.3"
 
   s.license = 'MIT'
 end

@@ -2,76 +2,104 @@
 
 An ActiveRecord plugin that denormalizes your existing ActiveRecord models. 
 
-It includes generation of migration, observing the save/destory on target model and changes the records accordingly. It provides an easier way to create denormalized models to be used in reporting.
+It provides an easier way to create denormalized records to be used for reporting, includes generation of migration file. 
 
 ## Usage
 
-### Adding gem dependency
+Add gem dependency
+
     gem 'flatten_record'
-    gem 'rails-observers' # for Rails 4
 
-### Defining denormalization
+Include module in your newly defined model
+
+	include FlattenRecord::Flattener
+	
+### Define denormalization
     class DenormalizedOrder < ActiveRecord::Base
-    	include FlattenRecord::Denormalize
+    	include FlattenRecord::Flattener
 
-    	denormalize :order do |order|
-      		# :belongs_to association
-      		order.denormalize :customer
+    	denormalize :order, {
+      		include: { 
+      		    # :belongs_to association
+      			customer: {}
       		
-      		# :has_many association, create multiple denormalized records  
-      		order.denormalize :line_items do |line_item|
-        		line_item.denormalize(:redeem, as: :discount){|d| d.denormalize(:coupon) }
-      		end
-          order.save :order_sum, :decimal
-    	end
+      			# :has_many association, create multiple denormalized records  
+      			line_items: {}
+  			},
+  			methods: {
+          		# save methods defined in Normalized model
+          		total_in_usd: :decimal 
+          	},
+          	compute: {
+          		# compute methods defined in Denormalized model
+          		line_items_sum: { type: :decimal, default: 0 } 
+          	}
+    	}
 
     	private
-    	def _get_order_sum(order)
+    	def compute_line_items_sum(order)
       		order.line_items.collect(&:total).inject(:+)
     	end
   	end
   	
-### Generating migration file
+  	class Order < ActiveRecord::Base
+		def total_in_usd
+			# calculation
+		end
+	end
+  	
+### Generate migration file
+Generate migration file based on the definition
+
     $ rails generate flatten_record:migration denormalized_order
-	  create  db/migrate/20140313034700_create_table_denormalized_orders.rb	
-    
-### Updating changes and generating migration file
+	  create  db/migrate/20140313034700_create_table_denormalized_orders.rb	    
+Update definition and generate new migration file
+
     $ rails generate flatten_record:migration denormalized_order
     Warning. Table already exists: denormalized_orders
 	Generating migration based on the difference..
 	Add columns: d_line_items_description
-      create  db/migrate/20140313034736_add_d_line_items_description_to_denormalized_orders.rb
+      create  db/migrate/20140313034736_add_d_line_items_description_to_denormalized_orders.rb      
 
-### Eager loading
-Eager loading the denormalized model class is required to load _ActiveRecord observers_ for the target model on app initialization.  
-  
-	# initializers/<denormalize>.rb or lib/<engine>/engine.rb 
-	config.after_initialize do
-      require_dependency root.join('app/models/denormalized_order').to_s
-    end
+### Use denormalizer methods
+Create record
 
-### Denormalizing 
-After adding "eager loading"(see above), _ActiveRecord observers_ are added to the _target model and it's defined association_ to refresh denormalized records.
+	irb(main)> DenormalizedOrder.create_with(order)
 
-However, you might want to create a rake task, and run ```create_denormalized``` to denormalize the exisiting records.
-  
-	irb(main)> DenormalizedOrder.create_denormalized(order)
+Deleting record(s)
 
-### Deleting records
-	irb(main)> DenormalizedOrder.destroy_denormalized(order)
+	irb(main)> DenormalizedOrder.destroy_with(order)
 
-### Refreshing records
-	irb(main)> DenormalizedOrder.last.refresh_denormalized
+Update record(s)
+
+	irb(main)> DenormalizedOrder.update_with(order)
+
+## Design & Documentation  
+
+Refer to the [wiki](https://github.com/alvinsj/flatten_record/wiki).
+    
     
 ## Versions
 
-#####v1   
-_still in development_  
+#####v1  
+- tree-based denormalization: nicer code & structure √ 
+- new DSL + syntax √    
+(Credit to [@scottharvey](https://github.com/scottharvey)'s issue [#6](https://github.com/alvinsj/flatten_record/issues/6))
+- added :prefix option - use your own column prefix √  
+- added :methods option - save normalized model's method √  
+(Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
+- change to old :save option to :compute option √  
+(Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
+- deprecate observer √  
+
+#####v0   
 - denormalize fields and nested fields √  
 - denormalize belongs_to, has_many typed associations √    
 - generate migration from denormalized model √   
 - observe model changes and update denormalized model √  
-- ...
+
+## Contributors
+- [@scottharvey](https://github.com/scottharvey)
 
 ## License  
 see MIT-LICENSE.
