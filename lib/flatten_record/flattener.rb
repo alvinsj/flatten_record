@@ -28,10 +28,17 @@ module FlattenRecord
       end
 
       def create_with(normal)
-        raise "unmatch model type #{normal.class.inspect}" unless normal_model.eql?(normal.class)
-        records = flattener_meta.denormalize(normal, self.new)
-        records.each(&:save)
-        records
+        if normal_model.eql?(normal.class)
+          destroy_with(normal)
+          records = flattener_meta.denormalize(normal, self.new)
+          records.each(&:save)
+          records
+        else
+          destroy_with(normal)
+          find_normals(normal).each do |n|
+            create_with(n)
+          end
+        end
       end
 
       def update_with(normal)
@@ -40,13 +47,27 @@ module FlattenRecord
       end
 
       def destroy_with(normal)
-        records = find_with(normal)
         if normal_model.eql?(normal.class)
+          records = find_with(normal)
           records.each{|r| r.destroy }
         else
-          self.update(normal, records) 
+          # update associated model
+          find_normals(normal).each do |n|
+            update_with(n)
+          end
         end
         records
+      end
+
+      def find_normals(normal)
+        return normal if normal_model.eql?(normal.class)
+        
+        records = find_with(normal)
+        id_name = flattener_meta.id_column.name
+        normal_id_name = flattener_meta.id_column.column.name
+        
+        ids = records.collect{|c| c.send(id_name.to_sym) }
+        normal_model.where(normal_id_name => ids)
       end
 
       def find_with(normal)

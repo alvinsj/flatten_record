@@ -8,11 +8,15 @@ module FlattenRecord
       
       def all_columns
         return @columns if @columns
-        child_columns = @include.values.map do |c|
-          c[:columns] + c[:methods] + c[:compute]
+        child_columns = @include.values.collect do |n|
+          n[:columns] + n[:methods] + n[:compute]
         end
         child_columns.flatten!
         @columns = @base_columns + @methods + @compute + child_columns 
+      end
+
+      def associated_models
+        @include.blank? ? target_model : @include.values.collect(&:associated_models).flatten
       end
 
       def [](key)
