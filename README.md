@@ -30,21 +30,18 @@ It includes generation of migration, observing the save/destory on target model 
       			# :has_many association, create multiple denormalized records  
       			line_items: {}
   			},
-  			method: [
+  			method: {
           		# save methods defined in Normalized model
-          		:total_in_usd
-          	],
-          	compute: [
-          		# new integer column with method defined below
-          		:line_items_sum,
-          		
-          		# new column with different type
-          		{ details: { sql_type: :string} }
-          	]
+          		total_in_usd: :decimal 
+          	},
+          	compute: {
+          		# compute methods defined in Denormalized model
+          		line_items_sum: { type: :decimal, default: 0 } 
+          	}
     	}
 
     	private
-    	def line_item_sum(order)
+    	def compute_line_item_sum(order)
       		order.line_items.collect(&:total).inject(:+)
     	end
   	end
@@ -72,8 +69,7 @@ It includes generation of migration, observing the save/destory on target model 
 	irb(main)> DenormalizedOrder.update_with(order)
 
 ## Other Modules
-
-### Model Observer
+### Model Observer  
 Observe changes in the normalized model and create denormalized records. 
 
 The implementaion uses `after_commit` method in `ActiveRecord::Observer`.  
@@ -98,17 +94,22 @@ Eager loading is required to load _ActiveRecord::Observer_ on app initialization
 
 #####v1  
 - tree-based denormalization: nicer code & structure √ 
-- new DSL + syntax √ 
-- custom column prefix in denormalized table √  
-- introduce :methods & :compute √ 
-- update denormalized records 
-- remove rails gem dependency
+- new DSL + syntax √    
+(Credit to [@scottharvey](https://github.com/scottharvey)'s issue [#6](https://github.com/alvinsj/flatten_record/issues/6))
+- added :prefix option - use your own column prefix √  
+- added :methods option - save normalized model's method √  
+(Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
+- change to old :save option to :compute option √  
+(Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
 
 #####v0   
 - denormalize fields and nested fields √  
 - denormalize belongs_to, has_many typed associations √    
 - generate migration from denormalized model √   
 - observe model changes and update denormalized model √  
+
+## Contributors
+- [@scottharvey](https://github.com/scottharvey)
 
 ## License  
 see MIT-LICENSE.
