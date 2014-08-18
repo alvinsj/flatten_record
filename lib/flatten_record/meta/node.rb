@@ -6,8 +6,16 @@ module FlattenRecord
       def initialize(parent, target_model, model)
         @parent = parent
         @target_model = target_model.is_a?(ActiveRecord::Base) ? 
-          target_model : target_model.to_s.camelize.constantize
-        @model = model
+          target_model.to_s.underscore : target_model.to_s
+        @model = model.to_s.underscore
+      end
+
+      def target_model
+        @target_model.camelize.constantize 
+      end
+
+      def model
+        @model.camelize.constantize
       end
 
       def traverse_by(attr, value)
@@ -52,6 +60,9 @@ module FlattenRecord
 
       def target_columns
         target_model.columns
+      end
+
+      def inspect
       end
 
       private

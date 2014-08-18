@@ -5,7 +5,9 @@ module FlattenRecord
 
       def initialize(parent, col, target_model, model)
         super(parent, target_model, model)
-        @column = col
+        @column = Struct.
+          new(:name, :default, :type, :null).
+          new(col.name, col.default, col.type, col.null)
       end
       
       def name
