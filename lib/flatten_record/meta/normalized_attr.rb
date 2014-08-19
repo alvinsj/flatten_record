@@ -7,12 +7,8 @@ module FlattenRecord
       end
       
       def all_columns
-        return @columns if @columns
-        child_columns = @include.values.collect do |n|
-          n[:columns] + n[:methods] + n[:compute]
-        end
-        child_columns.flatten!
-        @columns = @base_columns + @methods + @compute + child_columns 
+        child_columns = @include.values.collect(&:all_columns)
+        @base_columns + @methods + @compute + child_columns.flatten 
       end
 
       def associated_models
@@ -59,21 +55,26 @@ module FlattenRecord
 
       def build(definition)
         super(definition)
-
+        
+        @foreign_keys = []
         primary_key = target_columns.select(&:primary).first
         @id_column = IdColumn.new(self, primary_key, target_model, model)
-
-        @excluded_columns = []
+        
         @compute = build_compute(definition) || []
         @methods = build_methods(definition) || []
         @include = build_children(definition) || {}
         @base_columns = build_columns(definition) || []
         
-        dups = find_dup_columns
-        if !dups.blank?
-          raise "#{@excluded_columns.inspect}Duplicate columns found: #{dups.join(", ")}"
-        end
+        validate_columns(all_columns)
+
         self
+      end
+
+      def validate_columns(columns)
+        dups = find_dup_columns(columns)
+        if dups.present?
+          raise "Duplicate columns found: #{dups.join(", ")}"
+        end
       end
       
       def children
@@ -130,38 +131,54 @@ module FlattenRecord
       end
 
       private
-      def find_dup_columns
+      def find_dup_columns(columns)
         dups = []
-        all_columns.each do |column|
-          all_columns.each do |comp|
-            if comp.parent != column.parent && comp.name == column.name
-              parent_target = column.parent.target_model.to_s
-              original_name = column.column.name
-              dups << "#{column.name} was from #{parent_target}'s #{original_name}"
-            end
+        columns.each do |column|
+          if match_columns?(columns, column)
+            parent_target = column.parent.target_model
+            original_name = column.column.name
+            dups << "#{column.name} was from #{parent_target}'s #{original_name}"
           end
         end
         dups
       end
 
-      def associated_node_factory(parent, child, class_name)
-        klass_map = [:has_many, :belongs_to, :has_one]
-
-        association = target_model.reflect_on_association(child)
-        @excluded_columns << association.foreign_key.to_s
-        
-        class_name ||= association.klass
-        node = nil
-        
-        if klass_map.include?(association.macro)
-          klass = association.macro.to_s.camelize.to_sym
-          node = Meta.const_get(klass).new(parent, association, class_name, model)
-        elsif associaton.macro.nil?
-          raise "association with '#{child}' on #{target_name} is not found"
-        else
-          raise "association type '#{association.macro}' with '#{child}' is not supported"
+      def match_columns?(columns, column)
+        columns.each do |c|
+          if c.parent != column.parent && c.name == column.name
+            return true
+          end
         end
-        node 
+        false
+      end
+
+      def associated_node_factory(parent, child, class_name)
+        association = target_model.reflect_on_association(child)
+
+        raise_missing_macro(child, target_model) unless association.macro
+        
+        if association_node?(association.macro)
+          class_name ||= association.klass
+          type = "#{association.macro}"
+          klass = Meta.const_get(type.camelize)
+          
+          @foreign_keys << association.foreign_key.to_s 
+          klass.new(parent, association, class_name, model)
+        else
+          raise_unsupported_type(association.macro, target_model)
+        end
+      end
+
+      def association_node?(type)
+        [:has_many, :belongs_to, :has_one].include?(type) 
+      end
+
+      def raise_unsupported_type(type, model)
+        raise "association type '#{type}' with '#{model}' is not supported"
+      end
+
+      def raise_missing_macro(child, model)
+        raise "association with '#{child}' on #{model} is not found"
       end
 
       def columns_from_definition(definition)
@@ -176,7 +193,7 @@ module FlattenRecord
 
       def allow_column?(col, definition)
         return false if col.primary
-        return false if @excluded_columns.include?(col.name.to_s) 
+        return false if @foreign_keys.include?(col.name.to_s) 
 
         if definition[:only].present?
           definition[:only].include?(col.name.to_sym) 

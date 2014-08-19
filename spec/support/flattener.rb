@@ -14,10 +14,12 @@ class FlattenRecord::Flattener::Test
       end
       create_table :children do |t|
         t.string :name
+        t.string :description
         t.integer :parent_id
       end
       create_table :cats do |t|
         t.string :name
+        t.string :description
         t.string :owner_type
         t.integer :owner_id
       end
