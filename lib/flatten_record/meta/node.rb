@@ -63,6 +63,8 @@ module FlattenRecord
       end
 
       def inspect
+        # this prevents irb/console to inspect
+        # circular references on big tree caused problem on #inspect 
       end
 
       private
