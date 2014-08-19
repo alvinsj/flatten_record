@@ -28,7 +28,7 @@ module FlattenRecord
       end
 
       def traverse_by(attr, value)
-        attr_value = instance_variable_get("@#{attr}")
+        attr_value = send("#{attr}")
 
         if !value.respond_to?(:to_s) || !attr_value.respond_to?(:to_s)
           raise "traverse error: to_s method required for comparison"
