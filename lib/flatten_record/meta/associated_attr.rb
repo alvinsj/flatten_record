@@ -3,7 +3,9 @@ module FlattenRecord
     class AssociatedAttr < NormalizedAttr
       def initialize(parent, association, association_klass, model)
         super(parent, association_klass, model)
-        @association = association
+        @association = Struct.
+          new(:foreign_key, :name, :options).
+          new(association.foreign_key, association.name, association.options) 
       end
 
       def denormalize(instance, to_record)
@@ -31,10 +33,8 @@ module FlattenRecord
       end
       
       protected
-      attr_reader :association
-
       def options
-        association.options
+        @association.options
       end
     
       private

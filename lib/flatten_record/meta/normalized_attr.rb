@@ -24,11 +24,11 @@ module FlattenRecord
       end
       
       def prefix
-        @custom_prefix || parent.prefix+target_model.name.underscore.to_s + "_"
+        custom_prefix || "#{parent.prefix}#{target_model_name}_"
       end
 
       def traverse_by(attr, value)
-        attr_value = instance_variable_get("@#{attr}")
+        attr_value = send("#{attr}")
 
         if !value.respond_to?(:to_s) || !attr_value.respond_to?(:to_s)
           raise "traverse error: to_s method required for comparison"
@@ -58,7 +58,7 @@ module FlattenRecord
       end
 
       def build(definition)
-        definition = super(definition)
+        super(definition)
 
         primary_key = target_columns.select(&:primary).first
         @id_column = IdColumn.new(self, primary_key, target_model, model)
@@ -73,6 +73,7 @@ module FlattenRecord
         if !dups.blank?
           raise "#{@excluded_columns.inspect}Duplicate columns found: #{dups.join(", ")}"
         end
+        self
       end
       
       def children
@@ -91,10 +92,12 @@ module FlattenRecord
           options = {}
           if type.is_a?(Hash)
             options = type
-            type = options[:sql_type]
+            type = options[:type]
           end
 
-          ComputeColumn.new(self, method, type, target_model, model, options)
+          ComputeColumn.
+            new(self, method, type, target_model, model, options).
+            build(definition)
         end
       end
 
@@ -108,15 +111,19 @@ module FlattenRecord
             type = options[:sql_type]
           end
 
-          MethodColumn.new(self, method, type, target_model, model)
+          MethodColumn.
+            new(self, method, type, target_model, model).
+            build(definition)
         end
       end
 
       def build_children(definition)
         return {} unless definition[:include]
-        children = Hash.new
+        
+        children = {}
         definition[:include].each do |child, child_definition|
-          children[child] = node_factory(self, child, child_definition[:definition][:class_name])
+          class_name = child_definition[:definition][:class_name]
+          children[child] = associated_node_factory(self, child, class_name)
           children[child].build(child_definition)
         end
         children
@@ -137,7 +144,7 @@ module FlattenRecord
         dups
       end
 
-      def node_factory(parent, child, class_name)
+      def associated_node_factory(parent, child, class_name)
         klass_map = [:has_many, :belongs_to, :has_one]
 
         association = target_model.reflect_on_association(child)
@@ -150,7 +157,7 @@ module FlattenRecord
           klass = association.macro.to_s.camelize.to_sym
           node = Meta.const_get(klass).new(parent, association, class_name, model)
         elsif associaton.macro.nil?
-          raise "association with '#{child}' on #{target_model.name.underscore} is not found"
+          raise "association with '#{child}' on #{target_name} is not found"
         else
           raise "association type '#{association.macro}' with '#{child}' is not supported"
         end
@@ -160,7 +167,11 @@ module FlattenRecord
       def columns_from_definition(definition)
         target_columns.
           select {|col| allow_column?(col, definition) }.
-          map {|col| Column.new(self, col, target_model, model)} 
+          map do |col| 
+            Column.
+              new(self, col, target_model, model).
+              build(definition)
+          end
       end
 
       def allow_column?(col, definition)
