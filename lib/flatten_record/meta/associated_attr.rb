@@ -34,7 +34,7 @@ module FlattenRecord
       
       protected
       def options
-        association.options
+        @association.options
       end
     
       private
