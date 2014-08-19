@@ -2,8 +2,7 @@ module FlattenRecord
   module Meta
     class IdColumn < Column
       def initialize(parent, primary_key, target_model, model)
-        @column = primary_key
-        super(parent, @column, target_model, model) 
+        super(parent, primary_key, target_model, model) 
       end
 
       def name
