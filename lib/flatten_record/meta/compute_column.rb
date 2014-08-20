@@ -10,16 +10,9 @@ module FlattenRecord
       end
 
       def denormalize(instance, to_record)
-        first_record = to_record.respond_to?(:each) ? to_record.flatten.first : to_record
-
-        begin
-          to_record = assign_value(to_record, name) do |record|
-            record.send("compute_#{@column.name}".to_sym, instance)
-          end
-        rescue
-          raise "compute_#{@column.name} is not found in #{to_record.inspect}"
+        assign_value(to_record, name) do |record|
+          record.send("compute_#{@column.name}".to_sym, instance)
         end
-        to_record
       end 
     end
   end
