@@ -1,8 +1,10 @@
 # FlattenRecord [![Code Climate](https://codeclimate.com/github/alvinsj/flatten_record.png)](https://codeclimate.com/github/alvinsj/flatten_record)  [![Build Status](https://travis-ci.org/alvinsj/flatten_record.png?branch=master)](https://travis-ci.org/alvinsj/flatten_record)
 
-An ActiveRecord plugin that denormalizes your existing ActiveRecord models. 
+An ActiveRecord plugin that helps to denormalize your existing ActiveRecord models. 
 
-It provides an easier way to create denormalized records to be used for reporting, includes generation of migration file. 
+It provides an easier way to denormalize/flatten normalized records, including generation of migration file.
+
+_e.g. useful when query for report, read [denormalized table for real-time reporting](https://github.com/alvinsj/flatten_record/wiki/Denormalized-table-for-real-time-reporting)._
 
 ## Example
 
@@ -91,7 +93,7 @@ Update definition and generate new migration file
     Warning. Table already exists: denormalized_orders
 	Generating migration based on the difference..
 	Add columns: line_items_description
-      create  db/migrate/20140313034736_add_d_line_items_description_to_denormalized_orders.rb      
+      create  db/migrate/20140313034736_add_line_items_description_to_denormalized_orders.rb      
 
 ### Use denormalizer methods
 Create record
@@ -106,7 +108,7 @@ Update record(s)
 
 	irb(main)> DenormalizedOrder.update_with(order)
 
-## Design & Documentation  
+## API Documentation/Development/Discussion  
 
 Refer to the [wiki](https://github.com/alvinsj/flatten_record/wiki).
     
