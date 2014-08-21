@@ -31,7 +31,7 @@ module FlattenRecord
         if normal_model.eql?(normal.class)
           destroy_with(normal)
           records = flattener_meta.denormalize(normal.reload, self.new)
-          records.each(&:save)
+          records.respond_to?(:each) ? records.each(&:save) : records.save
           records
         else
           destroy_with(normal)
@@ -49,7 +49,7 @@ module FlattenRecord
       def destroy_with(normal)
         if normal_model.eql?(normal.class)
           records = find_with(normal)
-          records.each{|r| r.destroy }
+          records.each(&:destroy)
         else
           # update associated model
           find_normals(normal).each do |n|
@@ -72,7 +72,8 @@ module FlattenRecord
 
       def find_with(normal)
         node = find_node(:target_model, normal.class)
-
+        
+        raise "#{normal.class} was not defined in the denormalization" if node.nil?
         id_name = node.id_column.name 
         normal_id_name = node.id_column.column.name
 
