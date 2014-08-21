@@ -2,9 +2,7 @@
 
 An ActiveRecord plugin that helps to denormalize your existing ActiveRecord models. 
 
-It provides an easier way to denormalize/flatten normalized records, including generation of migration file.
-
-_e.g. useful when query for report, read [denormalized table for real-time reporting](https://github.com/alvinsj/flatten_record/wiki/Denormalized-table-for-real-time-reporting)._
+It provides an easier way to denormalize/flatten normalized records, and generation the table schema.
 
 ## Example
 
@@ -74,9 +72,9 @@ Include module in your newly defined model
     	def compute_line_items_sum(order)
       		order.line_items.collect(&:total).inject(:+)
     	end
-  	end
+    end
   	
-  	class Order < ActiveRecord::Base
+	class Order < ActiveRecord::Base
 		def total_in_usd
 			# calculation
 		end
