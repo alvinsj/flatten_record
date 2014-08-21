@@ -40,11 +40,7 @@ module FlattenRecord
           end
         end
       end
-
-      def update_with(normal)
-        destroy_with(normal)
-        create_with(normal)
-      end
+      alias_method :update_with, :create_with
 
       def destroy_with(normal)
         if normal_model.eql?(normal.class)
