@@ -91,7 +91,6 @@ module FlattenRecord
           denormalized_columns.inject([]) do |cols, col|
             if !column_names.include?(col.name)
               cols << col
-              puts "#{col.name}"
             end
             cols
           end
