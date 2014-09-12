@@ -51,27 +51,25 @@ module FlattenRecord
       def diff_and_generate
         if any_diff?
           puts "Generating migration based on the difference.."
+          puts "  #{yellow('Other columns(not defined):')} #{extra_columns_names}" unless extra_columns.empty?
           puts "  #{green('Add columns:')} #{add_columns_names}" unless add_columns.empty?
-          puts "  #{red('Drop columns:')} #{drop_columns_names}" unless drop_columns.empty?
 
-          @migration = add_columns.empty? ? 
-            "drop_#{drop_columns.first.name}_etc_from" : 
-            "add_#{add_columns.first.name}_etc_to"
+          @migration = "add_#{add_columns.first.name}_and_columns_to"
           
           migration_template('update.erb', "db/migrate/#{@migration}_#{@table_name}.rb")
         end
       end
 
       def any_diff?
-        !add_columns.empty? || !drop_columns.empty? 
+        !add_columns.empty? 
       end
 
       def add_columns_names
         add_columns.collect(&:name).join(', ')
       end
 
-      def drop_columns_names
-        drop_columns.collect(&:name).join(', ')
+      def extra_columns_names
+        extra_columns.collect(&:name).join(', ')
       end
 
       def columns
@@ -96,8 +94,8 @@ module FlattenRecord
           end
       end
       
-      def drop_columns
-        @drop_columns ||= 
+      def extra_columns
+        @extra_columns ||= 
           columns.inject([]) do |cols, col|
             if col.name != 'id' && !denormalized_column_names.include?(col.name)
               cols << col
@@ -106,9 +104,7 @@ module FlattenRecord
           end
       end
 
-      def valid?
-        Rails.application.eager_load!
-        
+      def valid? 
         begin 
           klass && meta
         rescue Exception => e
