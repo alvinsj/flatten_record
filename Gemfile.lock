@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    flatten_record (1.0.6)
+    flatten_record (1.0.7)
       rails (>= 3.2.12, < 5)
 
 GEM
