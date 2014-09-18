@@ -35,7 +35,8 @@ module FlattenRecord
         else
           found = nil
           @include.values.each do |node|
-            found = node.traverse_by(attr, value)
+            n = node.traverse_by(attr, value)
+            found = n unless n.nil?
           end 
           return found
         end
