@@ -30,7 +30,7 @@ module FlattenRecord
           raise "traverse error: to_s method required for comparison"
         end
         
-        if value.to_s == attr_value.to_s
+        if value.to_s.downcase == attr_value.to_s.downcase
           return self
         else
           found = nil
