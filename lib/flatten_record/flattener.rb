@@ -12,19 +12,28 @@ module FlattenRecord
       Config.included_models << base.to_s
 
       base.class_eval do
-        cattr_accessor :flattener_meta, :normal_model
+        cattr_reader :root_node, :normal_model, :definition_hash
       end
     end
 
     module ClassMethods
       def denormalize(normal_model, definition_hash)
-        definition = Definition.new(definition_hash)
+        self.class_variable_set("@@definition_hash", definition_hash)
+        self.class_variable_set("@@normal_model", normal_model.to_s.camelize.constantize)
+      end
 
-        root_node = Meta::RootNode.new(normal_model, self)
-        root_node.build(definition)
+      def flattener_meta
+       
+        node = self.class_variable_get(:@@root_node)
+        if node.blank?
+          definition = Definition.new(self.definition_hash)
 
-        self.flattener_meta = root_node
-        self.normal_model = root_node.target_model
+          root_node = Meta::RootNode.new(self.normal_model, self)
+          root_node.build(definition)
+ 
+          node = self.class_variable_set("@@root_node", root_node)
+        end
+        node
       end
 
       def create_with(normal)
