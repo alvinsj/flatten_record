@@ -64,10 +64,34 @@ module FlattenRecord
         records
       end
 
+      def destroy_with_id(normal_id, normal_class=normal_model)
+        if normal_model.eql?(normal_class)
+          records = find_with_id(normal_id, normal_class)
+          records.each(&:destroy)
+        else
+          # update associated model
+          find_normals_with_id(normal_id, normal_class).each do |n|
+            update_with(n)
+          end
+        end
+        records
+      end
+
       def find_normals(normal)
         return normal if normal_model.eql?(normal.class)
         
         records = find_with(normal)
+        id_name = flattener_meta.id_column.name
+        normal_id_name = flattener_meta.id_column.column.name
+        
+        ids = records.collect{|c| c.send(id_name.to_sym) }
+        normal_model.where(normal_id_name => ids)
+      end
+
+      def find_normals_with_id(normal_id, normal_class=normal_model)
+        return normal_class.find(normal_id) if normal_model.eql?(normal_class)
+        
+        records = find_with_id(normal_id, normal_class)
         id_name = flattener_meta.id_column.name
         normal_id_name = flattener_meta.id_column.column.name
         
@@ -83,6 +107,16 @@ module FlattenRecord
         normal_id_name = node.id_column.column.name
 
         self.where(id_name => normal.send(normal_id_name))
+      end
+
+      def find_with_id(normal_id, normal_class=normal_model)
+        node = find_node(:target_model, normal_class)
+        
+        raise "#{normal_class} was not defined in the denormalization" if node.nil?
+        id_name = node.id_column.name 
+        normal_id_name = node.id_column.column.name
+
+        self.where(id_name => normal_id)
       end
 
       def find_node(type, value)

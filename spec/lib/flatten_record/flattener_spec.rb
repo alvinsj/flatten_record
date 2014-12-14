@@ -57,13 +57,16 @@ describe FlattenRecord::Flattener do
       Denormalized 
     end
 
-    let(:order_with_customer_with_one_child) do
+    let(:customer) do
       child = Child.new(name: 'Ethan')
       child.cats << Cat.new(name: 'Meow')
 
-      customer = Customer.create(name: 'Alvin') 
-      customer.children << child
-      
+      c = Customer.create(name: 'Alvin') 
+      c.children << child
+      c
+    end
+
+    let(:order_with_customer_with_one_child) do
       order = Order.new
       order.total = 100
      
@@ -99,8 +102,45 @@ describe FlattenRecord::Flattener do
         klass.destroy_with(order_with_customer_with_one_child)
         expect(klass.count).to eq(0)
       end
-    end #/.find_with
 
+      it 'should be able to update related records, when only child is changed' do 
+        order = order_with_customer_with_one_child
+        denormalized = klass.create_with(order) 
+        expect(klass.count).to eq(1)
+        
+        c = order.customer
+        c.update_attributes({name: "Anita"})
+  
+        klass.destroy_with(c)
+        expect(klass.count).to eq(1)
+        expect(klass.first.customer_name).to eq("Anita")
+      end
+    end #/.destroy_with
+
+
+    context '.destroy_with_id' do
+      it 'should be able to destroy related records' do 
+        order = order_with_customer_with_one_child
+        denormalized = klass.create_with(order) 
+        expect(klass.count).to eq(1)
+  
+        klass.destroy_with_id(order.id, order.class)
+        expect(klass.count).to eq(0)
+      end
+
+      it 'should be able to update related records, when only child is changed' do 
+        order = order_with_customer_with_one_child
+        denormalized = klass.create_with(order) 
+        expect(klass.count).to eq(1)
+        
+        c = order.customer
+        c.update_attributes({name: "Anita"})
+  
+        klass.destroy_with_id(c.id, c.class)
+        expect(klass.count).to eq(1)
+        expect(klass.first.customer_name).to eq("Anita")
+      end
+    end #/.destroy_with_id
   
   end
 end
