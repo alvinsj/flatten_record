@@ -8,7 +8,7 @@ module FlattenRecord
       def name
         column_name = super
         is_parent_root? ?
-          target_model_name + "_" + column_name : 
+          target_model_name.camelize.demodulize.underscore + "_" + column_name : 
           column_name
       end
      
