@@ -113,7 +113,7 @@ Refer to the [wiki](https://github.com/alvinsj/flatten_record/wiki).
     
 ## Versions
 
-#####v1  
+##### v1  
 - tree-based denormalization: nicer code & structure √ 
 - new DSL + syntax √    
 (Credit to [@scottharvey](https://github.com/scottharvey)'s issue [#6](https://github.com/alvinsj/flatten_record/issues/6))
@@ -124,7 +124,7 @@ Refer to the [wiki](https://github.com/alvinsj/flatten_record/wiki).
 (Credit to [@scottharvey](https://github.com/scottharvey)'s idea)
 - deprecate observer √  
 
-#####v0   
+##### v0   
 - denormalize fields and nested fields √  
 - denormalize belongs_to, has_many typed associations √    
 - generate migration from denormalized model √   
